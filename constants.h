@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cmath>
-
 namespace constants
 {
 	inline constexpr double universal_gas_constant = 8.31446261815324;
