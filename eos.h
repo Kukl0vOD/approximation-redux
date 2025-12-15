@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utility.h"
+#include "utilities.h"
 #include "component.h"
 
 enum class Correlation
