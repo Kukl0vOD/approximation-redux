@@ -9,7 +9,7 @@
 
 namespace test
 {
-	//CubicPolynomial Test
+	//CubicPolynomial test
 	void testIsCanonicalInit()
 	{
 		utilities::CubicPolynomial test(1.0, 0.0, 3.0, 2.0);
@@ -42,6 +42,7 @@ namespace test
 		testRootCalculation();
 	}
 
+	//Interpolation test
 	void testLagrangeInterpolation()
 	{
 		std::vector<double> x_vec = { 0,1 };

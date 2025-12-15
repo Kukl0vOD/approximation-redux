@@ -8,40 +8,6 @@
 
 namespace sol
 {
-	enum class Phase
-	{
-		LIQUID,
-		GAS,
-		TWO_PHASED
-	};
-
-	enum PressureDimension
-	{
-		BAR
-	};
-
-	enum VolumeDimension
-	{
-		LITER
-	};
-
-	enum SpecificVolumeDimension
-	{
-		LITER_PER_GRAMM
-	};
-
-	struct State
-	{
-		Phase							phase;
-		PressureDimension				p_dim;
-		double							pressure;
-		double							temperature;
-		VolumeDimension					v_dim;
-		std::optional<double>			volume = std::nullopt;
-		SpecificVolumeDimension			sv_dim;
-		std::optional<double>			specific_volume = std::nullopt;
-	};
-
 	class Solution
 	{
 		Solution(
