@@ -42,9 +42,18 @@ namespace test
 		testRootCalculation();
 	}
 
+	void testLagrangeInterpolation()
+	{
+		std::vector<double> x_vec = { 0,1 };
+		std::vector<double> y_vec = { 0,1 };
+
+		assert(fabs(utilities::LagrangeInterpolation(x_vec, y_vec, 0.5) - 0.5) <= constants::machine_epsilon);
+	}
+
 	void startAllTests()
 	{
 		testCubicPolynomial();
+		testLagrangeInterpolation();
 
 		std::cout << "All tests passed!";
 	}
