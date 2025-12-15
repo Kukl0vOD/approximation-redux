@@ -30,21 +30,21 @@ namespace sol
 	{
 		std::string	name;
 
-		double		critical_temperature;
-		double		critical_pressure;
-		double		accentric_factor;
-		double		molar_mass;
+		double					critical_temperature;
+		double					critical_pressure;
+		double					accentric_factor;
+		double					molar_mass;
 	};
 
 	struct State
 	{
-		Phase							phase;
-		PressureDimension				p_dim;
-		double							pressure;
-		double							temperature;
-		VolumeDimension					v_dim;
-		std::optional<double>			volume = std::nullopt;
-		SpecificVolumeDimension			sv_dim;
-		std::optional<double>			specific_volume = std::nullopt;
+		Phase					phase;
+		PressureDimension		p_dim;
+		double					pressure;
+		double					temperature;
+		VolumeDimension			v_dim;
+		SpecificVolumeDimension	sv_dim;
+		std::optional<double>	volume = std::nullopt;
+		std::optional<double>	specific_volume = std::nullopt;
 	};
 }
