@@ -1,68 +1,64 @@
 #pragma once
 
+#include "eos.h"
+
 #include <string>
+#include <memory>
+#include <optional>
 
 namespace sol
 {
 	enum class Phase
 	{
 		LIQUID,
-		GAS
+		GAS,
+		TWO_PHASED
 	};
 
-	class Component
+	enum PressureDimension
 	{
-	public:
-		Component(
-			const std::string& name,
-			double critical_temperature,
-			double critical_pressure,
-			double accentric_factor,
-			double molar_mass
-		);
-
-		void		setName(const std::string& name);
-		void		setCriticalTemperature(double critical_temperature);
-		void		setCriticalPressure(double critical_pressure);
-		void		setAccentricFactor(double accentric_factor);
-		void		setMolarMass(double molar_mass);
-
-		std::string getName() const;
-		double		getCriticalTemperature() const;
-		double		getCriticalPressure() const;
-		double		getAccentricFactor() const;
-		double		getMolarMass() const;
-	private:
-		std::string name_;
-
-		double		critical_temperature_;
-		double		critical_pressure_;
-		double		accentric_factor_;
-		double		molar_mass_;
+		BAR
 	};
 
-	//TODO: Concentrations
-
-	class Concentration
+	enum VolumeDimension
 	{
+		LITER
 	};
 
-	//TODO: BIP
-
-	class BIP
+	enum SpecificVolumeDimension
 	{
-		enum class Correlattion
-		{
-			GAO
-		};
-
-
+		LITER_PER_GRAMM
 	};
 
-	//TODO: Solution
+	struct State
+	{
+		Phase							phase;
+		PressureDimension				p_dim;
+		double							pressure;
+		double							temperature;
+		VolumeDimension					v_dim;
+		std::optional<double>			volume = std::nullopt;
+		SpecificVolumeDimension			sv_dim;
+		std::optional<double>			specific_volume = std::nullopt;
+	};
 
 	class Solution
 	{
+		Solution(
+			const std::vector<Component>& components,
+			const std::vector<double>& concentrations,
+			Correlation correlation,
+			std::unique_ptr<eos::ICubicEOS> eos,
+			const State& current_state
+			);
 
+	private:
+		std::vector<Component>			components_;
+		std::vector<double>				concentations_;
+		Matrix<double>					bip_;
+
+		std::unique_ptr<eos::ICubicEOS>	eos_;
+
+		State							current_state_;
 	};
 }
