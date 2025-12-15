@@ -128,10 +128,6 @@ namespace eos
 
 		return equation.getRoots();
 	}
-	std::vector<double> PengRobinson::calculateSpecificZFactor(const sol::Component& component) const
-	{
-		return std::vector<double>();
-	}
 	std::vector<double> PengRobinson::calculateZFactor(const sol::Component& component, sol::State current_state) const
 	{
 		double p = current_state.pressure;
@@ -148,10 +144,6 @@ namespace eos
 
 		return equation.getRoots();
 	}
-	std::vector<double> PengRobinson::calculateSpecificZFactor(const sol::Component& component, sol::State current_state) const
-	{
-		return std::vector<double>();
-	}
 	std::vector<double> PengRobinson::calculateZFactor(const std::vector<sol::Component>& components, const std::vector<double>& concentration, Matrix<double> bip, sol::State current_state) const
 	{
 		double p = current_state.pressure;
@@ -167,9 +159,5 @@ namespace eos
 		utilities::CubicPolynomial equation(1.0, -(1.0 - B), (A - 3.0 * B * B - 2.0 * B), -(A * B - B * B - B * B * B));
 
 		return equation.getRoots();
-	}
-	std::vector<double> PengRobinson::calculateSpecificZFactor(const std::vector<sol::Component>& components, const std::vector<double>& concentration, Matrix<double> bip, sol::State current_state) const
-	{
-		return std::vector<double>();
 	}
 }
