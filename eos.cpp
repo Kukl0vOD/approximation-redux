@@ -148,7 +148,7 @@ namespace eos
 		double t = current_state.temperature;
 		double R = constants::universal_gas_constant;
 
-		double a = calcualteSolutionA(components,concentration, bip, t);
+		double a = calculateSolutionA(components,concentration, bip, t);
 		double b = calculateSolutionB(components, concentration);
 
 		double A = a * p / pow(R * t, 2);
