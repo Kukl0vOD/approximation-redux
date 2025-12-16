@@ -28,7 +28,7 @@ namespace eos
 
 		return b;
 	}
-	double PengRobinson::calcualteSolutionA(const std::vector<sol::Component>& components, const std::vector<double>& concentration, Matrix<double> bip, double temperature) const
+	double PengRobinson::calculateSolutionA(const std::vector<sol::Component>& components, const std::vector<double>& concentration, Matrix<double> bip, double temperature) const
 	{
 		std::vector<double> a_clear;
 		a_clear.reserve(components.size());
@@ -63,12 +63,10 @@ namespace eos
 	}
 	Matrix<double> PengRobinson::calculateBIP(const std::vector<sol::Component>& components, Correlation correlation, sol::Phase phase)
 	{
-		Matrix<double> bip;
-		bip.reserve(components.size());
-
+		Matrix<double> bip(components.size());
 		for (auto& row : bip)
 		{
-			row.reserve(components.size());
+			row.resize(components.size());
 		}
 
 		switch (correlation)
