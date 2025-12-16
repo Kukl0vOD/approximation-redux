@@ -114,10 +114,10 @@ namespace sol
 			switch (current_state_.phase)
 			{
 			case sol::Phase::LIQUID:
-				z_factor = *std::min_element(roots.begin(), roots.begin());
+				z_factor = *std::min_element(roots.begin(), roots.end());
 				break;
 			case sol::Phase::GAS:
-				z_factor = *std::max_element(roots.begin(), roots.begin());
+				z_factor = *std::max_element(roots.begin(), roots.end());
 				break;
 			default:
 				break;
@@ -140,5 +140,4 @@ namespace sol
 
 		return *current_state_.specific_volume;
 	}
-
 }

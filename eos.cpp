@@ -87,12 +87,12 @@ namespace eos
 					switch (phase)
 					{
 					case sol::Phase::LIQUID:
-						zi_factor = *std::min_element(roots_i.begin(), roots_i.begin());
-						zj_factor = *std::min_element(roots_j.begin(), roots_j.begin());
+						zi_factor = *std::min_element(roots_i.begin(), roots_i.end());
+						zj_factor = *std::min_element(roots_j.begin(), roots_j.end());
 						break;
 					case sol::Phase::GAS:
-						zi_factor = *std::max_element(roots_i.begin(), roots_i.begin());
-						zj_factor = *std::max_element(roots_j.begin(), roots_j.begin());
+						zi_factor = *std::max_element(roots_i.begin(), roots_i.end());
+						zj_factor = *std::max_element(roots_j.begin(), roots_j.end());
 						break;
 					default:
 						break;
