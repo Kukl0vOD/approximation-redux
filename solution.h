@@ -21,10 +21,10 @@ namespace sol
 			const State& current_state
 			);
 
-		std::vector<Component>			getComponents() const;
-		std::vector<double>				getConcentrations() const;
-		Matrix<double>					getBIP() const;
-		State							getState();
+		const std::vector<Component>&	getComponents() const;
+		const std::vector<double>&		getConcentrations() const;
+		const Matrix<double>&			getBIP() const;
+		const State&					getState();
 
 		void							setComponents(const std::vector<Component> components);
 		void							setCallback(const ConcentrationCallback& callback);
@@ -44,6 +44,8 @@ namespace sol
 		std::unique_ptr<eos::ICubicEOS>	eos_;
 
 		State							current_state_;
+
+		Correlation						correlation_;
 	};
 
 }
