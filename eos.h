@@ -16,7 +16,7 @@ namespace eos
 		virtual						~ICubicEOS() = 0;
 		virtual double				calculateClearComponentA(const sol::Component& component, const double temperature) const = 0;
 		virtual double				calculateClearComponentB(const sol::Component& component) const = 0;
-		virtual double				calcualteSolutionA(const std::vector<sol::Component>& components, const std::vector<double>& concentration, Matrix<double> bip, double temperature) const = 0;
+		virtual double				calculateSolutionA(const std::vector<sol::Component>& components, const std::vector<double>& concentration, Matrix<double> bip, double temperature) const = 0;
 		virtual double				calculateSolutionB(const std::vector<sol::Component>& components, const std::vector<double>& concentration) const = 0;
 
 		virtual Matrix<double>		calculateBIP(const std::vector<sol::Component>& components, Correlation correlation, sol::Phase phase) = 0;
@@ -31,7 +31,7 @@ namespace eos
 									~PengRobinson() override = default;
 		double						calculateClearComponentA(const sol::Component& component, const double temperature) const override;
 		double						calculateClearComponentB(const sol::Component& component) const override;
-		double						calcualteSolutionA(const std::vector<sol::Component>& components, const std::vector<double>& concentration, Matrix<double> bip, double temperature) const override;
+		double						calculateSolutionA(const std::vector<sol::Component>& components, const std::vector<double>& concentration, Matrix<double> bip, double temperature) const override;
 		double						calculateSolutionB(const std::vector<sol::Component>& components, const std::vector<double>& concentration) const override;
 
 		Matrix<double>				calculateBIP(const std::vector<sol::Component>& components, Correlation correlation, sol::Phase phase) override;
