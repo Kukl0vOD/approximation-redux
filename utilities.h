@@ -27,6 +27,8 @@ namespace utilities
 
 		double	calculateQDiscriminant();
 		Roots	getRoots();
+		
+		double calculatePolynomialValue(double x) const;
 
 	private:
 		double	a_;

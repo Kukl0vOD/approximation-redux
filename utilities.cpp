@@ -91,4 +91,8 @@ namespace utilities
 			}
 		}
 	}
+	double CubicPolynomial::calculatePolynomialValue(double x) const
+	{
+		return a_ * pow(x, 3.0) + b_ * pow(x, 2.0) + c_ * x + d_;
+	}
 }
