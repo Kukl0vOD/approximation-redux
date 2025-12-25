@@ -77,14 +77,16 @@ namespace test
 			617.7,
 			2.103 * 1000000.0,
 			0.4884,
-			0.14229
+			0.14229,
+			sol::PressureDimension::PA,
+			sol::MolarMassDimension::KG
 		};
 		sol::State state
 		{
-			sol::Phase::GAS,
-			sol::PressureDimension::PA,
+		
 			0.5 * 1000000.0,
 			590.0,
+			sol::PressureDimension::PA,
 			sol::VolumeDimension::M3,
 			sol::SpecificVolumeDimension::LITER_PER_GRAMM
 		};
