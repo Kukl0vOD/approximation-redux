@@ -72,25 +72,25 @@ namespace utilities
 		static double convert(double molar_mass, sol::MolarMassDimension input, sol::MolarMassDimension output);
 
 	private:
-		inline static const std::unordered_map<sol::PressureDimension, double> pressure_conversion_factor_
-		{
-			{sol::PressureDimension::PA, 1.0},
-			{sol::PressureDimension::MPA, 0.000001},
-			{sol::PressureDimension::BAR, 0.00001}
-		};
-		inline static const std::unordered_map<sol::VolumeDimension, double> volume_conversion_factor_
-		{
-			{sol::VolumeDimension::M3, 1.0},
-			{sol::VolumeDimension::ML, 0.000001},
-			{sol::VolumeDimension::LITER, 0.001}
-		};
+		inline static const std::unordered_map<sol::PressureDimension, double>		 pressure_conversion_factor_
+		{																			 
+			{sol::PressureDimension::PA, 1.0},										 
+			{sol::PressureDimension::MPA, 0.000001},								 
+			{sol::PressureDimension::BAR, 0.00001}									 
+		};																			 
+		inline static const std::unordered_map<sol::VolumeDimension, double>		 volume_conversion_factor_
+		{																			 
+			{sol::VolumeDimension::M3, 1.0},										 
+			{sol::VolumeDimension::ML, 0.000001},									 
+			{sol::VolumeDimension::LITER, 0.001}									 
+		};																			 
 		inline static const std::unordered_map<sol::SpecificVolumeDimension, double> specific_volume_conversion_factor_
-		{
-			{sol::SpecificVolumeDimension::M3_PER_KG, 1.0},
-			{sol::SpecificVolumeDimension::LITER_PER_GRAMM, 1.0},
-			{sol::SpecificVolumeDimension::ML_PER_GRAMM, 0.001}
-		};
-		inline static const std::unordered_map<sol::MolarMassDimension, double> molar_mass_converion_factor_
+		{																			
+			{sol::SpecificVolumeDimension::M3_PER_KG, 1.0},							
+			{sol::SpecificVolumeDimension::LITER_PER_GRAMM, 1.0},					
+			{sol::SpecificVolumeDimension::ML_PER_GRAMM, 0.001}						
+		};																			
+		inline static const std::unordered_map<sol::MolarMassDimension, double>		 molar_mass_converion_factor_
 		{
 			{sol::MolarMassDimension::KG, 1.0},
 			{sol::MolarMassDimension::GRAMM, 0.001}
