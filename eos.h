@@ -28,6 +28,7 @@ namespace eos
 
 	class PengRobinson : public ICubicEOS
 	{
+	public:
 									~PengRobinson() override = default;
 		double						calculateClearComponentA(const sol::Component& component, const double temperature) const override;
 		double						calculateClearComponentB(const sol::Component& component) const override;
