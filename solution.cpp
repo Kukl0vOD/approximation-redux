@@ -94,9 +94,9 @@ namespace sol
 
 		auto R = constants::universal_gas_constant;
 		auto t = current_state_.temperature;
-		auto p = current_state_.pressure;
+		auto p = utilities::UnitConverter::convert(current_state_.pressure, current_state_.p_dim, sol::PressureDimension::PA);
 
-		current_state_.volume = (z_factor * R * t) / p;
+		current_state_.volume = utilities::UnitConverter::convert((z_factor * R * t) / p, sol::VolumeDimension::M3, current_state_.v_dim);
 
 		return *current_state_.volume;
 	}
@@ -108,15 +108,16 @@ namespace sol
 			return *current_state_.specific_volume;
 		}
 
-		double volume = calculateVolume();
+		double volume = utilities::UnitConverter::convert(calculateVolume(), current_state_.v_dim, sol::VolumeDimension::M3);
 		double weight = 0;
 
 		for (size_t i = 0; i < components_.size(); i++)
 		{
-			weight += concentations_[i] * components_[i].molar_mass;
+			auto molar_mass = utilities::UnitConverter::convert(components_[i].molar_mass, components_[i].mm_dim, sol::MolarMassDimension::KG);
+			weight += concentations_[i] * molar_mass;
 		}
 
-		current_state_.specific_volume = volume / weight;
+		current_state_.specific_volume = utilities::UnitConverter::convert(volume / weight, sol::SpecificVolumeDimension::M3_PER_KG, current_state_.sv_dim);
 
 		return *current_state_.specific_volume;
 	}

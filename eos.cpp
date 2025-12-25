@@ -112,7 +112,7 @@ namespace eos
 	}
 	std::vector<double> PengRobinson::calculateZFactor(const sol::Component& component) const
 	{
-		double p_c = component.critical_pressure;
+		double p_c = utilities::UnitConverter::convert(component.critical_pressure, component.p_dim, sol::PressureDimension::PA);
 		double t_c = component.critical_temperature;
 		double R = constants::universal_gas_constant;
 
@@ -128,7 +128,8 @@ namespace eos
 	}
 	std::vector<double> PengRobinson::calculateZFactor(const sol::Component& component, sol::State current_state) const
 	{
-		double p = current_state.pressure;
+
+		double p = utilities::UnitConverter::convert(current_state.pressure, current_state.p_dim, sol::PressureDimension::PA);
 		double t = current_state.temperature;
 		double R = constants::universal_gas_constant;
 
@@ -144,7 +145,7 @@ namespace eos
 	}
 	std::vector<double> PengRobinson::calculateZFactor(const std::vector<sol::Component>& components, const std::vector<double>& concentration, Matrix<double> bip, sol::State current_state) const
 	{
-		double p = current_state.pressure;
+		double p = utilities::UnitConverter::convert(current_state.pressure, current_state.p_dim, sol::PressureDimension::PA);
 		double t = current_state.temperature;
 		double R = constants::universal_gas_constant;
 
