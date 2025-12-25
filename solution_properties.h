@@ -11,41 +11,57 @@ namespace sol
 		GAS,
 	};
 
-	enum PressureDimension
+	enum class PressureDimension
 	{
 		PA,
 		MPA,
 		BAR
 	};
 
-	enum VolumeDimension
+	enum class VolumeDimension
 	{
 		M3,
+		ML,
 		LITER
 	};
 
-	enum SpecificVolumeDimension
+	enum class SpecificVolumeDimension
 	{
-		LITER_PER_GRAMM
+		LITER_PER_GRAMM,
+		ML_PER_GRAMM,
+		M3_PER_KG
+	};
+
+	enum class MolarMassDimension
+	{
+		KG,
+		GRAMM
 	};
 
 	struct Component
 	{
 		std::string				name;
+
 		double					critical_temperature;
 		double					critical_pressure;
 		double					accentric_factor;
 		double					molar_mass;
+
+		PressureDimension		p_dim;
+		MolarMassDimension		mm_dim;
 	};
 
 	struct State
 	{
-		Phase					phase;
-		PressureDimension		p_dim;
 		double					pressure;
 		double					temperature;
+
+		Phase					phase;
+
+		PressureDimension		p_dim;
 		VolumeDimension			v_dim;
 		SpecificVolumeDimension	sv_dim;
+
 		std::optional<double>	volume = std::nullopt;
 		std::optional<double>	specific_volume = std::nullopt;
 	};
