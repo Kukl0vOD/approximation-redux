@@ -3,6 +3,14 @@
 #include "utilities.h"
 #include "solution_properties.h"
 
+#include <stdexcept>
+#include <memory>
+
+enum class EOSType
+{
+	PENG_ROBINSON
+};
+
 enum class Correlation
 {
 	GAO
@@ -40,5 +48,11 @@ namespace eos
 		std::vector<double>			calculateZFactor(const sol::Component& component) const override;
 		std::vector<double>			calculateZFactor(const sol::Component& component, sol::State current_state) const override;
 		std::vector<double>			calculateZFactor(const std::vector<sol::Component>& components, const std::vector<double>& concentration, Matrix<double> bip, sol::State current_state) const override;
+	};
+
+	class EOSFactory
+	{
+	public:
+		static std::unique_ptr<ICubicEOS> createEOS(EOSType type);
 	};
 }

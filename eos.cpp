@@ -160,4 +160,14 @@ namespace eos
 		return equation.getRoots();
 	}
 	ICubicEOS::~ICubicEOS() = default;
+	std::unique_ptr<ICubicEOS> EOSFactory::createEOS(EOSType type)
+	{
+		switch (type)
+		{
+		case EOSType::PENG_ROBINSON:
+			return std::make_unique<PengRobinson>();
+		default:
+			throw std::invalid_argument("Unknown EOS type");
+		}
+	}
 }
