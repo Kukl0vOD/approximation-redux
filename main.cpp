@@ -3,5 +3,6 @@
 int main()
 {
 	test::startAllTests();
+
 	return 0;
 };
