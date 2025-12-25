@@ -103,4 +103,12 @@ namespace utilities
 	{
 		return volume * volume_conversion_factor_.at(output) / volume_conversion_factor_.at(input);
 	}
+	double UnitConverter::convert(double volume, sol::SpecificVolumeDimension input, sol::SpecificVolumeDimension output)
+	{
+		return volume * specific_volume_conversion_factor_.at(output) / specific_volume_conversion_factor_.at(input);
+	}
+	double UnitConverter::convert(double molar_mass, sol::MolarMassDimension input, sol::MolarMassDimension output)
+	{
+		return molar_mass * molar_mass_converion_factor_.at(output) / molar_mass_converion_factor_.at(output);
+	}
 }
