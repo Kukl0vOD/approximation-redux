@@ -57,6 +57,16 @@ namespace test
 		assert(fabs(utilities::LagrangeInterpolation(x_vec, y_vec, 0.5) - 0.5) <= constants::machine_epsilon);
 	}
 	
+	//UnitConverter test
+	void testUnitConverter()
+	{
+		auto pressure = utilities::UnitConverter::convert(1.0, sol::PressureDimension::MPA, sol::PressureDimension::BAR);
+		assert((pressure - 10.0) <= constants::machine_epsilon);
+
+		auto volume = utilities::UnitConverter::convert(1.0, sol::VolumeDimension::M3, sol::VolumeDimension::LITER);
+		assert((volume - 1000.0) <= constants::machine_epsilon);
+	}
+
 	//Z-factor test
 	void testClearComponentZFactor()
 	{
@@ -102,6 +112,7 @@ namespace test
 	{
 		testCubicPolynomial();
 		testLagrangeInterpolation();
+		testUnitConverter();
 		testClearComponentZFactor();
 
 		std::cout << "All tests passed!";
