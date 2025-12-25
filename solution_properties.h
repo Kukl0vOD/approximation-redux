@@ -13,11 +13,14 @@ namespace sol
 
 	enum PressureDimension
 	{
+		PA,
+		MPA,
 		BAR
 	};
 
 	enum VolumeDimension
 	{
+		M3,
 		LITER
 	};
 
@@ -28,8 +31,7 @@ namespace sol
 
 	struct Component
 	{
-		std::string	name;
-
+		std::string				name;
 		double					critical_temperature;
 		double					critical_pressure;
 		double					accentric_factor;
