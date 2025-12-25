@@ -3,15 +3,31 @@
 
 namespace sol
 {
-	Solution::Solution(const std::vector<Component>& components, ConcentrationCallback callback, Correlation correlation, std::unique_ptr<eos::ICubicEOS> eos, const State& current_state)
+	Solution::Solution(const std::vector<Component>& components, ConcentrationCallback callback, Correlation correlation, EOSType eos_type, const State& current_state, Phase phase)
 		: components_(components)
 		, concentations_(callback(current_state))
 		, concentration_callback_(callback)
-		, bip_(eos->calculateBIP(components, correlation, current_state.phase))
-		, eos_(std::move(eos))
+		, eos_type_(eos_type)
+		, eos_(std::move(eos::EOSFactory::createEOS(eos_type)))
+		, bip_(eos_->calculateBIP(components, correlation, phase))
 		, current_state_(current_state)
 		, correlation_(correlation)
+		, phase_(phase)
 	{
+	}
+
+	Solution::Solution(const Solution& other)
+		: components_(other.components_)
+		, concentations_(other.concentations_)
+		, concentration_callback_(other.concentration_callback_)
+		, eos_type_(other.eos_type_)
+		, eos_(std::move(eos::EOSFactory::createEOS(eos_type_)))
+		, bip_(other.bip_)
+		, current_state_(other.current_state_)
+		, correlation_(other.correlation_)
+		, phase_(other.phase_)
+	{
+
 	}
 
 	const std::vector<Component>& Solution::getComponents() const
@@ -56,7 +72,7 @@ namespace sol
 
 	void Solution::setBip(Correlation correlation)
 	{
-		bip_ = eos_->calculateBIP(components_, correlation, current_state_.phase);
+		bip_ = eos_->calculateBIP(components_, correlation, phase_);
 	}
 
 	void Solution::setEOS(std::unique_ptr<eos::ICubicEOS> eos)
@@ -70,6 +86,47 @@ namespace sol
 		concentations_ = concentration_callback_(state);
 	}
 
+	void Solution::setPressure(double pressure)
+	{
+		current_state_.pressure = pressure;
+		setState(current_state_);
+	}
+
+	void Solution::setPressureDimension(PressureDimension new_dimension)
+	{
+		current_state_.pressure = utilities::UnitConverter::convert(current_state_.pressure, current_state_.p_dim, new_dimension);
+		current_state_.p_dim = new_dimension;
+	}
+
+	void Solution::setVolumeDimension(VolumeDimension new_dimension)
+	{
+		if (current_state_.volume)
+		{
+			current_state_.volume = utilities::UnitConverter::convert(*current_state_.volume, current_state_.v_dim, new_dimension);
+		}
+
+		current_state_.v_dim = new_dimension;
+	}
+
+	void Solution::setSpecificVolumeDimension(SpecificVolumeDimension new_dimension)
+	{
+		if (current_state_.specific_volume)
+		{
+			current_state_.specific_volume = utilities::UnitConverter::convert(*current_state_.specific_volume, current_state_.sv_dim, new_dimension);
+		}
+
+		current_state_.sv_dim = new_dimension;
+	}
+
+	void Solution::setMolarMassDimension(MolarMassDimension new_dimension)
+	{
+		for (auto& component : components_)
+		{
+			component.molar_mass= utilities::UnitConverter::convert(component.molar_mass, component.mm_dim, new_dimension);
+			component.mm_dim = new_dimension;
+		}
+	}
+
 	double Solution::calculateVolume()
 	{
 		if (current_state_.volume)
@@ -80,7 +137,7 @@ namespace sol
 		auto roots = eos_->calculateZFactor(components_, concentations_, bip_, current_state_);
 		auto z_factor = 0.0;
 
-		switch (current_state_.phase)
+		switch (phase_)
 		{
 		case sol::Phase::LIQUID:
 			z_factor = *std::min_element(roots.begin(), roots.end());
