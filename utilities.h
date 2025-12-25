@@ -1,7 +1,10 @@
 #pragma once
 
+#include "solution_properties.h"
+
 #include <vector>
 #include <cassert>
+#include <unordered_map>
 
 template <class T>
 using Matrix = std::vector<std::vector<T>>;
@@ -59,4 +62,24 @@ namespace utilities
 
 		return y;
 	}
+
+	class UnitConverter
+	{
+	public:
+		static double convert(double pressure, sol::PressureDimension input, sol::PressureDimension output);
+		static double convert(double volume, sol::VolumeDimension input, sol::VolumeDimension output);
+
+	private:
+		inline static const std::unordered_map<sol::PressureDimension, double> pressure_conversion_factor_
+		{
+			{sol::PressureDimension::PA, 1.0},
+			{sol::PressureDimension::MPA, 0.000001},
+			{sol::PressureDimension::BAR, 0.00001}
+		};
+		inline static const std::unordered_map<sol::VolumeDimension, double> volume_conversion_factor_
+		{
+			{sol::VolumeDimension::M3, 1.0},
+			{sol::VolumeDimension::LITER, 0.001}
+		};
+	};
 }

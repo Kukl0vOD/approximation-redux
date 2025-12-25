@@ -95,4 +95,12 @@ namespace utilities
 	{
 		return a_ * pow(x, 3.0) + b_ * pow(x, 2.0) + c_ * x + d_;
 	}
+	double UnitConverter::convert(double pressure, sol::PressureDimension input, sol::PressureDimension output)
+	{
+		return pressure * pressure_conversion_factor_.at(output) / pressure_conversion_factor_.at(input);
+	}
+	double UnitConverter::convert(double volume, sol::VolumeDimension input, sol::VolumeDimension output)
+	{
+		return volume * volume_conversion_factor_.at(output) / volume_conversion_factor_.at(input);
+	}
 }
