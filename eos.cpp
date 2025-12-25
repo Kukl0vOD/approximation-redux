@@ -158,4 +158,5 @@ namespace eos
 
 		return equation.getRoots();
 	}
+	ICubicEOS::~ICubicEOS() = default;
 }
