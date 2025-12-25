@@ -56,8 +56,6 @@ namespace sol
 		double					pressure;
 		double					temperature;
 
-		Phase					phase;
-
 		PressureDimension		p_dim;
 		VolumeDimension			v_dim;
 		SpecificVolumeDimension	sv_dim;
