@@ -66,10 +66,10 @@ namespace utilities
 	class UnitConverter
 	{
 	public:
-		static double convert(double pressure, sol::PressureDimension input, sol::PressureDimension output);
-		static double convert(double volume, sol::VolumeDimension input, sol::VolumeDimension output);
-		static double convert(double volume, sol::SpecificVolumeDimension input, sol::SpecificVolumeDimension output);
-		static double convert(double molar_mass, sol::MolarMassDimension input, sol::MolarMassDimension output);
+		static double																 convert(double pressure, sol::PressureDimension input, sol::PressureDimension output);
+		static double																 convert(double volume, sol::VolumeDimension input, sol::VolumeDimension output);
+		static double																 convert(double volume, sol::SpecificVolumeDimension input, sol::SpecificVolumeDimension output);
+		static double																 convert(double molar_mass, sol::MolarMassDimension input, sol::MolarMassDimension output);
 
 	private:
 		inline static const std::unordered_map<sol::PressureDimension, double>		 pressure_conversion_factor_

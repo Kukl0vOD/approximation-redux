@@ -3,7 +3,7 @@
 
 namespace approx
 {
-	Approximator::Approximator(sol::Solution gas_solution, sol::Solution liquid_solution, double pressure_1, double pressure_2, double pressure_3, VolumeType type = VolumeType::MOLAR)
+	Approximator::Approximator(sol::Solution gas_solution, sol::Solution liquid_solution, double pressure_1, double pressure_2, double pressure_3, VolumeType type)
 		: gas_solution_(gas_solution)
 		, liquid_solution_(liquid_solution)
 		, temperature_(gas_solution.getState().temperature)
@@ -14,11 +14,11 @@ namespace approx
 
 		assert((t - liquid_solution.getState().temperature)<=constants::machine_epsilon);
 
-		double gas_volume_1;
-		double gas_volume_2;
-		double liquid_volume_1;
-		double liquid_volume_2;
-		double liquid_volume_3;
+		double gas_volume_1 = 0.;
+		double gas_volume_2 = 0.;
+		double liquid_volume_1 =0.;
+		double liquid_volume_2 = 0.;
+		double liquid_volume_3 = 0.;
 
 		switch (type)
 		{

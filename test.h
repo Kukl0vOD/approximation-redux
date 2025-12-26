@@ -3,6 +3,7 @@
 #include "constants.h"
 #include "solution.h"
 #include "utilities.h"
+#include "json_parser.h"
 
 #include <cassert>
 #include <iostream>
