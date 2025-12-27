@@ -89,7 +89,7 @@ namespace approx
 		return volume;
 	}
 
-	std::vector<double> Approximator::approximateKValue(double pressure, double pressure_0)
+	std::unordered_map<std::string_view, double> Approximator::approximateKValue(double pressure, double pressure_0)
 	{
 		auto R = constants::universal_gas_constant;
 
@@ -101,16 +101,23 @@ namespace approx
 
 		assert(gas_concentrations.size() == liquid_concentrations.size());
 
-		std::vector<double> k_values(gas_concentrations.size());
+		std::unordered_map<std::string_view, double> k_values(gas_concentrations.size());
 
-		for (size_t i = 0; i < gas_concentrations.size(); i++)
+		for (const auto& [name, g_concentration] : gas_concentrations)
 		{
-			auto k0 = gas_concentrations[i] / liquid_concentrations[i];
+			auto l_concentration_it = liquid_concentrations.find(name);
+
+			if (l_concentration_it == liquid_concentrations.end())
+			{
+				throw std::logic_error("different solutions");
+			}
+
+			auto k0 = g_concentration / l_concentration_it->second;
 			auto temp_k_value = k0 * pow((pressure + pextra_) / (pressure_0 + pextra_), alpha_)
 				* pow(pressure_0 / pressure, beta_)
 				* exp((bl_ - bg_) * (pressure - pressure_0) / (R * temperature_));
 
-			k_values.push_back(temp_k_value);
+			k_values[name] = temp_k_value;
 		}
 		
 		return k_values;

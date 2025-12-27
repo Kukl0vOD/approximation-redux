@@ -9,7 +9,7 @@
 
 namespace sol
 {
-	using ConcentrationCallback = std::function<std::vector<double>(State)>;
+	using ConcentrationCallback = std::function<std::unordered_map<std::string_view, double>(State)>;
 
 	class Solution
 	{
@@ -25,8 +25,9 @@ namespace sol
 		Solution(const Solution& other);
 		
 		const std::vector<Component>&	getComponents() const;
-		const std::vector<double>&		getConcentrations() const;
+		const std::unordered_map<std::string_view, double>& getConcentrations() const;
 		const Matrix<double>&			getBIP() const;
+		Phase							getPhase() const;
 		const State&					getState();
 
 		void							setComponents(const std::vector<Component> components);
@@ -38,15 +39,16 @@ namespace sol
 		void							setVolumeDimension(VolumeDimension new_dimension);
 		void							setSpecificVolumeDimension(SpecificVolumeDimension new_dimension);
 		void							setMolarMassDimension(MolarMassDimension new_dimension);
+		void							setState(const State& state);
+		void							setPhase(Phase phase);
 
 		double							calculateVolume();
 		double							calculateSpecificVolume();
 
 	private:
-		void							setState(const State& state);
 
 		std::vector<Component>			components_;
-		std::vector<double>				concentations_;
+		std::unordered_map<std::string_view, double>				concentations_;
 		ConcentrationCallback			concentration_callback_;
 		EOSType							eos_type_;
 		std::unique_ptr<eos::ICubicEOS>	eos_;
@@ -56,19 +58,25 @@ namespace sol
 		Phase							phase_;
 	};
 
-	inline std::vector<double> calculateKValue(Solution gas_solution, Solution liquid_solution)
+	inline std::unordered_map<std::string_view, double> calculateKValue(Solution gas_solution, Solution liquid_solution)
 	{
 		auto gas_concentrations = gas_solution.getConcentrations();
 		auto liquid_concentrations = liquid_solution.getConcentrations();
 
 		assert(gas_concentrations.size() == liquid_concentrations.size());
 
-		std::vector<double> k_values(gas_concentrations.size());
+		std::unordered_map<std::string_view, double> k_values(gas_concentrations.size());
 
-		for (size_t i = 0; i < gas_concentrations.size(); i++)
+		for (const auto& [name, g_concentration] : gas_concentrations)
 		{
-			auto k_value = gas_concentrations[i] / liquid_concentrations[i];
-			k_values.push_back(k_value);
+			auto l_concentration_it = liquid_concentrations.find(name);
+			
+			if (l_concentration_it == liquid_concentrations.end())
+			{
+				throw std::logic_error("different solutions");
+			}
+
+			k_values[name] = g_concentration / l_concentration_it->second;
 		}
 
 		return k_values;

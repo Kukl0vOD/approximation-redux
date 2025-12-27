@@ -35,7 +35,7 @@ namespace sol
 		return components_;
 	}
 
-	const std::vector<double>& Solution::getConcentrations() const
+	const std::unordered_map <std::string_view, double>& Solution::getConcentrations() const
 	{
 		return concentations_;
 	}
@@ -43,6 +43,11 @@ namespace sol
 	const Matrix<double>& Solution::getBIP() const
 	{
 		return bip_;
+	}
+
+	Phase Solution::getPhase() const
+	{
+		return phase_;
 	}
 
 	const State& Solution::getState()
@@ -84,6 +89,11 @@ namespace sol
 	{
 		current_state_ = state;
 		concentations_ = concentration_callback_(state);
+	}
+
+	void Solution::setPhase(Phase phase)
+	{
+		phase_ = phase;
 	}
 
 	void Solution::setPressure(double pressure)
@@ -168,10 +178,10 @@ namespace sol
 		double volume = utilities::UnitConverter::convert(calculateVolume(), current_state_.v_dim, sol::VolumeDimension::M3);
 		double weight = 0;
 
-		for (size_t i = 0; i < components_.size(); i++)
+		for (const auto& component : components_)
 		{
-			auto molar_mass = utilities::UnitConverter::convert(components_[i].molar_mass, components_[i].mm_dim, sol::MolarMassDimension::KG);
-			weight += concentations_[i] * molar_mass;
+			auto molar_mass = utilities::UnitConverter::convert(component.molar_mass, component.mm_dim, sol::MolarMassDimension::KG);
+			weight += concentations_[component.name] * molar_mass;
 		}
 
 		current_state_.specific_volume = utilities::UnitConverter::convert(volume / weight, sol::SpecificVolumeDimension::M3_PER_KG, current_state_.sv_dim);

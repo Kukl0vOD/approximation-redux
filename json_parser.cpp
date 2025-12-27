@@ -187,7 +187,7 @@ namespace json
 
 			pressures.push_back(pressure_vector);
 
-			std::vector<std::vector<double>> concentration_matrix(components.size());
+			std::vector<std::pair<std::string_view, std::vector<double>>> concentration_matrix(components.size());
 		
 			for (const auto& component : components)
 			{
@@ -206,17 +206,17 @@ namespace json
 					concentration_vector.push_back(c.AsDouble());
 				}
 
-				concentration_matrix.push_back(concentration_vector);
+				concentration_matrix.push_back({ component.name, concentration_vector });
 			}
 
 			auto concentration_callback = [=](const sol::State& state)
 				{
-					std::vector<double> result(concentration_matrix.size());
+					std::unordered_map<std::string_view, double> result(concentration_matrix.size());
 
 					for (const auto& component_concentration : concentration_matrix)
 					{
-						auto interpolated_pressure = utilities::LagrangeInterpolation(pressure_vector, component_concentration, state.pressure);
-						result.push_back(interpolated_pressure);
+						auto interpolated_pressure = utilities::LagrangeInterpolation(pressure_vector, component_concentration.second, state.pressure);
+						result[component_concentration.first] = interpolated_pressure;
 					}
 
 					return result;

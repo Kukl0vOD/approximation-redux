@@ -22,7 +22,7 @@ namespace approx
 		);
 		double				approximateGasVolume(double pressure);
 		double				approximateLiquidVolume(double pressure);
-		std::vector<double> approximateKValue(double pressure, double pressure_0);
+		std::unordered_map<std::string_view, double> approximateKValue(double pressure, double pressure_0);
 
 	private:
 		sol::Solution		gas_solution_;
