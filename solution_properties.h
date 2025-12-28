@@ -18,6 +18,12 @@ namespace sol
 		BAR
 	};
 
+	enum class VolumeType
+	{
+		MOLAR,
+		SPECIFIC
+	};
+
 	enum class VolumeDimension
 	{
 		M3,
