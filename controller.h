@@ -5,6 +5,17 @@
 
 #include <array>
 
+enum class RequestType
+{
+    EXACT_MOLAR,
+    EXACT_SPECIFIC,
+    EXACT_KVALUE,
+
+    APPROXIMATION_MOLAR,
+    APPROXIMATION_SPECIFIC,
+    APPROXIMATION_KVALUE
+};
+
 class Controller
 {
 public:
@@ -13,6 +24,10 @@ public:
                EOSType init_eos_type = EOSType::PENG_ROBINSON,
                sol::Phase init_phase= sol::Phase::GAS,
                sol::State init_state = default_init_state);
+
+    //debug function
+    //remove in future
+    ParsedData getData() const;
 
     void setConcentrationState(size_t index);
 
@@ -31,10 +46,12 @@ public:
     void approximateVolumeInRange(const std::string& json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies);
     void approximateSpecificVolumeInRange(const std::string& json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies);
     void approximateKValuesInRange(const std::string& json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies);
+    static std::string generateJsonName(const ConcentrationState& c_state, RequestType type);
 
 private:
-    void setConcentrationState(sol::Solution& solution, size_t index) const;
+    void setConcentrationStateInternal(sol::Solution& solution, size_t index) const;
 
+    size_t current_index_ = 0;
     ParsedData data_;
     std::unique_ptr<sol::Solution> current_solution_;
 
