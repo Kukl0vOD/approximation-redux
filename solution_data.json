@@ -1,9 +1,11 @@
 {
+  "Pressure_dimension": "Bar",
+
   "Solution": [
     {
       "name": "N2",
       "critical_temperature": 126.2,
-      "critical_pressure": 33.9439,
+      "critical_pressure": 33.94390,
       "accentric_factor": 0.04,
       "molar_mass": 0.028
     },
@@ -86,35 +88,35 @@
 
     "concentration_state": {
       "0_gas": {
-        "temperature": 0,
+        "temperature": 273.15,
         "phase": "gas"
       },
       "0_oil": {
-        "temperature": 0,
+        "temperature": 273.15,
         "phase": "oil"
       },
       "100_gas": {
-        "temperature": 100,
+        "temperature": 373.15,
         "phase": "gas"
       },
       "100_oil": {
-        "temperature": 100,
+        "temperature": 373.15,
         "phase": "oil"
       },
       "200_gas": {
-        "temperature": 200,
+        "temperature": 473.15,
         "phase": "gas"
       },
       "200_oil": {
-        "temperature": 200,
+        "temperature": 473.15,
         "phase": "oil"
       },
       "300_gas": {
-        "temperature": 300,
+        "temperature": 573.15,
         "phase": "gas"
       },
       "300_oil": {
-        "temperature": 300,
+        "temperature": 573.15,
         "phase": "oil"
       }
     },
