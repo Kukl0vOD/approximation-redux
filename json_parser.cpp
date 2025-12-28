@@ -6,7 +6,7 @@ namespace json
 		: solution_data_(Load(json_file))
 	{
 	}
-	std::vector<sol::Component> Parser::parseSolution()
+	std::vector<sol::Component> Parser::parseSolution(sol::PressureDimension p_dim)
 	{
 		auto data = solution_data_.GetRoot().AsMap();
 		auto solution_it = data.find("Solution");
@@ -17,16 +17,17 @@ namespace json
 		}
 
 		auto components = solution_it->second.AsArray();
-		std::vector<sol::Component> solution(components.size());
+		std::vector<sol::Component> solution;
+		solution.reserve(components.size());
 
 		for (const auto& component : components)
 		{
-			solution.push_back(parseComponent(component));
+			solution.push_back(parseComponent(component, p_dim));
 		}
 
 		return solution;
 	}
-	sol::Component Parser::parseComponent(const json::Node& component)
+	sol::Component Parser::parseComponent(const json::Node& component, sol::PressureDimension p_dim)
 	{
 		auto component_map = component.AsMap();
 
@@ -49,7 +50,7 @@ namespace json
 		{
 			name_it->second.AsString(),
 			critical_temperature_it->second.AsDouble(),
-			critical_pressure_it->second.AsDouble(),
+			utilities::UnitConverter::convert(critical_pressure_it->second.AsDouble(),p_dim, sol::PressureDimension::PA),
 			accentric_factor_it->second.AsDouble(),
 			molar_mass_it->second.AsDouble(),
 			sol::PressureDimension::PA,
@@ -60,8 +61,30 @@ namespace json
 	{
 		auto data = solution_data_.GetRoot().AsMap();
 		auto concentration_it = data.find("Concentrations");
+		auto pressure_dimension_it = data.find("Pressure_dimension");
 
-		if (concentration_it == data.end())
+		if (concentration_it == data.end()
+			|| pressure_dimension_it == data.end())
+		{
+			throw ParsingError("Incorect json file");
+		}
+
+		auto p_dim_string = pressure_dimension_it->second.AsString();
+		sol::PressureDimension p_dim;
+
+		if (p_dim_string == "Bar")
+		{
+			p_dim = sol::PressureDimension::BAR;
+		}
+		else if (p_dim_string == "MPa")
+		{
+			p_dim = sol::PressureDimension::MPA;
+		}
+		else if (p_dim_string == "Pa")
+		{
+			p_dim = sol::PressureDimension::PA;
+		}
+		else
 		{
 			throw ParsingError("Incorect json file");
 		}
@@ -69,8 +92,8 @@ namespace json
 		auto concentration_map = concentration_it->second;
 		auto names = parseConcentrationNames(concentration_map);
 		auto states = parseConcentrationState(concentration_map, names);
-		auto components = parseSolution();
-		auto callbacks = parseConcentrationMap(concentration_map, names, components);
+		auto components = parseSolution(p_dim);
+		auto callbacks = parseConcentrationMap(concentration_map, names, components, p_dim);
 
 		return ParsedData
 		{
@@ -80,18 +103,19 @@ namespace json
 			callbacks
 		};
 	}
+
 	std::deque<std::string> Parser::parseConcentrationNames(const Node& concentration_map)
 	{
 		auto concentration_data = concentration_map.AsMap();
 		auto concentration_names_it = concentration_data.find("concentration_names");
 
-		if (concentration_names_it == concentration_data.end())\
+		if (concentration_names_it == concentration_data.end())
 		{
 			throw ParsingError("Incorect json file");
 		}
 		
 		auto concentration_names = concentration_names_it->second.AsArray();
-		std::deque<std::string> names(concentration_names.size());
+		std::deque<std::string> names;
 
 		for (const auto& name : concentration_names)
 		{
@@ -100,7 +124,7 @@ namespace json
 
 		return names;
 	}
-	std::unordered_map<std::string_view, ConcentrationState> Parser::parseConcentrationState(const Node& concentration_map, const std::deque<std::string>& names)
+	std::unordered_map<std::string, ConcentrationState> Parser::parseConcentrationState(const Node& concentration_map, const std::deque<std::string>& names)
 	{
 		auto concentration_data = concentration_map.AsMap();
 		auto concetration_state_it = concentration_data.find("concentration_state");
@@ -111,7 +135,7 @@ namespace json
 		}
 
 		auto concentration_state_map = concetration_state_it->second.AsMap();
-		std::unordered_map<std::string_view, ConcentrationState> concentration_states;
+		std::unordered_map<std::string, ConcentrationState> concentration_states;
 
 		for (const auto& name : names)
 		{
@@ -153,10 +177,10 @@ namespace json
 
 		return concentration_states;
 	}
-	std::unordered_map<std::string_view, sol::ConcentrationCallback> Parser::parseConcentrationMap(const Node& concentration_map, const std::deque<std::string>& names, const std::vector<sol::Component>& components)
+	std::unordered_map<std::string, sol::ConcentrationCallback> Parser::parseConcentrationMap(const Node& concentration_map, const std::deque<std::string>& names, const std::vector<sol::Component>& components, sol::PressureDimension p_dim)
 	{
 		auto concentration_data = concentration_map.AsMap();
-		std::unordered_map<std::string_view, sol::ConcentrationCallback> callback_map;
+		std::unordered_map<std::string, sol::ConcentrationCallback> callback_map;
 		
 		std::vector<std::vector<double>> pressures(names.size());
 
@@ -178,16 +202,18 @@ namespace json
 			}
 
 			auto pressure_array = pressure_it->second.AsArray();
-			std::vector<double> pressure_vector(pressure_array.size());
+			std::vector<double> pressure_vector;
+			pressure_vector.reserve(pressure_array.size());
 
 			for (const auto& p : pressure_array)
 			{
-				pressure_vector.push_back(p.AsDouble());
+				pressure_vector.push_back(utilities::UnitConverter::convert(p.AsDouble(), p_dim, sol::PressureDimension::PA));
 			}
 
 			pressures.push_back(pressure_vector);
 
-			std::vector<std::pair<std::string_view, std::vector<double>>> concentration_matrix(components.size());
+			std::vector<std::pair<std::string, std::vector<double>>> concentration_matrix;
+			concentration_matrix.reserve(components.size());
 		
 			for (const auto& component : components)
 			{
@@ -199,7 +225,8 @@ namespace json
 				}
 
 				auto concentrations_array = concentration_vector_it->second.AsArray();
-				std::vector<double> concentration_vector(concentrations_array.size());
+				std::vector<double> concentration_vector;
+				concentration_vector.reserve(concentrations_array.size());
 
 				for (const auto& c : concentrations_array)
 				{
@@ -211,7 +238,7 @@ namespace json
 
 			auto concentration_callback = [=](const sol::State& state)
 				{
-					std::unordered_map<std::string_view, double> result(concentration_matrix.size());
+					std::unordered_map<std::string, double> result(concentration_matrix.size());
 
 					for (const auto& component_concentration : concentration_matrix)
 					{
