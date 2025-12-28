@@ -9,10 +9,10 @@ namespace json
     class Builder
     {
     private:
-        class DictContext;
-        class ArrayContext;
-        class KeyContext;
-        class BaseContext;
+        class               DictContext;
+        class               ArrayContext;
+        class               KeyContext;
+        class               BaseContext;
 
     public:
         Builder() = default;
