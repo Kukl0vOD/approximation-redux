@@ -1,5 +1,8 @@
 #include "controller.h"
 #include "json_builder.h"
+#include "approximation.h"
+
+#include <sstream>
 
 Controller::Controller(const std::string json_filename, Correlation correlation, EOSType eos_type, sol::Phase phase, sol::State init_state)
 {
@@ -19,6 +22,13 @@ Controller::Controller(const std::string json_filename, Correlation correlation,
         init_state,
         phase
         );
+
+    setConcentrationState(0);
+}
+
+ParsedData Controller::getData() const
+{
+    return data_;
 }
 
 void Controller::setConcentrationState(size_t index)
@@ -32,6 +42,8 @@ void Controller::setConcentrationState(size_t index)
     current_solution_->setPhase(current_state.phase);
     current_solution_->setCallback(current_callback);
     current_solution_->setState(solution_state);
+
+    current_index_ = index;
 }
 
 void Controller::setBip(Correlation correlation)
@@ -116,7 +128,7 @@ void Controller::calculateSpecificVolumeInRange(const std::string &json_output_f
                     .StartArray()
                         .Value(pressures)
                     .EndArray()
-                .Key("V")
+                .Key("SV")
                     .StartArray()
                         .Value(volumes)
                     .EndArray()
@@ -132,8 +144,8 @@ void Controller::calculateKValuesByDefinitionInRange(const std::string &json_out
     sol::Solution gas_solution(*current_solution_);
     sol::Solution liquid_solution(*current_solution_);
 
-    setConcentrationState(gas_solution, indecies.first);
-    setConcentrationState(liquid_solution, indecies.second);
+    setConcentrationStateInternal(gas_solution, indecies.first);
+    setConcentrationStateInternal(liquid_solution, indecies.second);
 
     if(gas_solution.getState().temperature!=liquid_solution.getState().temperature
         || gas_solution.getPhase()==liquid_solution.getPhase())
@@ -142,7 +154,7 @@ void Controller::calculateKValuesByDefinitionInRange(const std::string &json_out
     }
 
     json::Array pressures;
-    std::unordered_map<std::string_view, std::vector<double>> kvalues;
+    std::unordered_map<std::string, std::vector<double>> kvalues;
     
     for(double current_pressure=pressure_start; current_pressure<pressure_end;current_pressure+=pressure_inc)
     {
@@ -184,7 +196,7 @@ void Controller::calculateKValuesByDefinitionInRange(const std::string &json_out
     json::Print(output_doc,json_out);
 }
 
-void Controller::setConcentrationState(sol::Solution &solution, size_t index) const
+void Controller::setConcentrationStateInternal(sol::Solution& solution, size_t index) const
 {
     auto current_name = data_.names[index];
     auto current_state = data_.states.at(current_name);
@@ -197,17 +209,214 @@ void Controller::setConcentrationState(sol::Solution &solution, size_t index) co
     solution.setState(solution_state);
 }
 
-void Controller::approximateKValuesInRange(const std::string &json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
+std::string Controller::generateJsonName(const ConcentrationState& c_state, RequestType type)
 {
+    std::stringstream ss;
 
+    switch (type)
+    {
+    case RequestType::EXACT_MOLAR:
+        ss << "exact_molar_";
+        break;
+    case RequestType::EXACT_SPECIFIC:
+        ss << "exact_specific_";
+        break;
+    case RequestType::EXACT_KVALUE:
+        ss << "exact_kvalue_";
+        break;
+    case RequestType::APPROXIMATION_MOLAR:
+        ss << "app_molar_";
+        break;
+    case RequestType::APPROXIMATION_SPECIFIC:
+        ss << "app_specific_";
+        break;
+    case RequestType::APPROXIMATION_KVALUE:
+        ss << "app_kvalue_";
+        break;
+    default:
+        break;
+
+    }
+
+    ss << c_state.temperature;
+
+    if (type == RequestType::EXACT_MOLAR || type == RequestType::EXACT_SPECIFIC)
+    {
+        switch (c_state.phase)
+        {
+        case sol::Phase::GAS:
+            ss << "_gas";
+            break;
+        case sol::Phase::LIQUID:
+            ss << "_liquid";
+            break;
+        default:
+            break;
+        }
+    }
+
+    ss << ".json";
+
+    return ss.str();
+}
+
+void Controller::approximateKValuesInRange(const std::string& json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
+{
+    std::ofstream json_out(json_output_filename);
+
+    sol::Solution gas_solution(*current_solution_);
+    sol::Solution liquid_solution(*current_solution_);
+
+    setConcentrationStateInternal(gas_solution, indecies.first);
+    setConcentrationStateInternal(liquid_solution, indecies.second);
+
+    if (gas_solution.getState().temperature != liquid_solution.getState().temperature
+        || gas_solution.getPhase() == liquid_solution.getPhase())
+    {
+        throw std::logic_error("Different temperatures or same phases");
+    }
+
+    json::Array pressures;
+    std::unordered_map<std::string, std::vector<double>> kvalues;
+
+    approx::Approximator approximator(gas_solution, liquid_solution, fixed_pressures[0], fixed_pressures[1], fixed_pressures[2]);
+
+    for (double current_pressure = pressure_start; current_pressure < pressure_end; current_pressure += pressure_inc)
+    {
+        pressures.push_back(current_pressure);
+        auto kvalue = approximator.approximateKValue(current_pressure, fixed_pressures[0]);
+
+        for (const auto& component : current_solution_->getComponents())
+        {
+            kvalues[component.name].push_back(kvalue.at(component.name));
+        }
+    }
+
+    auto builded_part = json::Builder{}
+        .StartDict()
+            .Key("P")
+                .StartArray()
+                    .Value(pressures)
+                .EndArray();
+
+    for (const auto& component : current_solution_->getComponents())
+    {
+        json::Array json_kvalue;
+        for (const auto& kvalue : kvalues.at(component.name))
+        {
+            json_kvalue.push_back(kvalue);
+        }
+
+        builded_part = builded_part
+            .Key(component.name)
+                .StartArray()
+                    .Value(json_kvalue)
+                .EndArray();
+    }
+
+    auto output_doc = json::Document(builded_part.EndDict().Build());
+
+    json::Print(output_doc, json_out);
 }
 
 void Controller::approximateSpecificVolumeInRange(const std::string &json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
 {
+    std::ofstream json_out(json_output_filename);
 
+    sol::Solution gas_solution(*current_solution_);
+    sol::Solution liquid_solution(*current_solution_);
+
+    setConcentrationStateInternal(gas_solution, indecies.first);
+    setConcentrationStateInternal(liquid_solution, indecies.second);
+
+    if (gas_solution.getState().temperature != liquid_solution.getState().temperature
+        || gas_solution.getPhase() == liquid_solution.getPhase())
+    {
+        throw std::logic_error("Different temperatures or same phases");
+    }
+
+    json::Array pressures;
+    json::Array gas_volumes;
+    json::Array liquid_volumes;
+
+    approx::Approximator approximator(gas_solution, liquid_solution, fixed_pressures[0], fixed_pressures[1], fixed_pressures[2], sol::VolumeType::SPECIFIC);
+
+    for (double current_pressure = pressure_start; current_pressure < pressure_end; current_pressure += pressure_inc)
+    {
+        auto gas_volume = approximator.approximateGasVolume(current_pressure);
+        auto liquid_volume = approximator.approximateLiquidVolume(current_pressure);
+
+        pressures.push_back(current_pressure);
+        gas_volumes.push_back(gas_volume);
+        liquid_volumes.push_back(liquid_volume);
+    }
+
+    auto output_doc = json::Document(json::Builder{}
+        .StartDict()
+            .Key("P")
+                .StartArray()
+                    .Value(pressures)
+                .EndArray()
+            .Key("SV_Gas")
+                .StartArray()
+                    .Value(gas_volumes)
+                .EndArray()
+            .Key("SV_Liquid")
+                .StartArray()
+                    .Value(liquid_volumes)
+                .EndArray()
+            .EndDict().Build());
+
+    json::Print(output_doc, json_out);
 }
 
 void Controller::approximateVolumeInRange(const std::string &json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
 {
+    std::ofstream json_out(json_output_filename);
 
+    sol::Solution gas_solution(*current_solution_);
+    sol::Solution liquid_solution(*current_solution_);
+
+    setConcentrationStateInternal(gas_solution, indecies.first);
+    setConcentrationStateInternal(liquid_solution, indecies.second);
+
+    if (gas_solution.getState().temperature != liquid_solution.getState().temperature
+        || gas_solution.getPhase() == liquid_solution.getPhase())
+    {
+        throw std::logic_error("Different temperatures or same phases");
+    }
+
+    json::Array pressures;
+    json::Array gas_volumes;
+    json::Array liquid_volumes;
+
+    approx::Approximator approximator(gas_solution, liquid_solution, fixed_pressures[0], fixed_pressures[1], fixed_pressures[2]);
+
+    for (double current_pressure = pressure_start; current_pressure < pressure_end; current_pressure += pressure_inc)
+    {
+        auto gas_volume = approximator.approximateGasVolume(current_pressure);
+        auto liquid_volume = approximator.approximateLiquidVolume(current_pressure);
+
+        pressures.push_back(current_pressure);
+        gas_volumes.push_back(gas_volume);
+        liquid_volumes.push_back(liquid_volume);
+    }
+
+    auto output_doc = json::Document(json::Builder{}
+        .StartDict()
+            .Key("P")
+                .StartArray()
+                    .Value(pressures)
+                .EndArray()
+            .Key("V_Gas")
+                .StartArray()
+                    .Value(gas_volumes)
+                .EndArray()
+            .Key("V_Liquid")
+                .StartArray()
+                    .Value(liquid_volumes)
+                .EndArray()
+        .EndDict().Build());
+
+    json::Print(output_doc, json_out);
 }
