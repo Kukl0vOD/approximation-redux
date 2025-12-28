@@ -35,7 +35,7 @@ namespace sol
 		return components_;
 	}
 
-	const std::unordered_map <std::string_view, double>& Solution::getConcentrations() const
+	const std::unordered_map <std::string, double>& Solution::getConcentrations() const
 	{
 		return concentations_;
 	}
@@ -52,6 +52,7 @@ namespace sol
 
 	const State& Solution::getState()
 	{
+		/*
 		if (!current_state_.volume)
 		{
 			current_state_.volume = calculateVolume();
@@ -60,6 +61,7 @@ namespace sol
 		{
 			current_state_.specific_volume = calculateSpecificVolume();
 		}
+		*/
 
 		return current_state_;
 	}
@@ -88,7 +90,11 @@ namespace sol
 	void Solution::setState(const State& state)
 	{
 		current_state_ = state;
-		concentations_ = concentration_callback_(state);
+		auto converted_pressure = utilities::UnitConverter::convert(state.pressure, state.p_dim, sol::PressureDimension::PA);
+		auto copy_state = state;
+		copy_state.pressure = converted_pressure;
+
+		concentations_ = concentration_callback_(copy_state);
 	}
 
 	void Solution::setPhase(Phase phase)
@@ -98,8 +104,12 @@ namespace sol
 
 	void Solution::setPressure(double pressure)
 	{
-		current_state_.pressure = pressure;
-		setState(current_state_);
+		State new_state = current_state_;
+		new_state.pressure = pressure;
+		new_state.volume = std::nullopt;
+		new_state.specific_volume = std::nullopt;
+
+		setState(new_state);
 	}
 
 	void Solution::setPressureDimension(PressureDimension new_dimension)
@@ -144,6 +154,9 @@ namespace sol
 			return *current_state_.volume;
 		}
 
+		auto R = constants::universal_gas_constant;
+		auto t = current_state_.temperature;
+		auto p = utilities::UnitConverter::convert(current_state_.pressure, current_state_.p_dim, sol::PressureDimension::PA);
 		auto roots = eos_->calculateZFactor(components_, concentations_, bip_, current_state_);
 		auto z_factor = 0.0;
 
@@ -158,10 +171,6 @@ namespace sol
 		default:
 			break;
 		}
-
-		auto R = constants::universal_gas_constant;
-		auto t = current_state_.temperature;
-		auto p = utilities::UnitConverter::convert(current_state_.pressure, current_state_.p_dim, sol::PressureDimension::PA);
 
 		current_state_.volume = utilities::UnitConverter::convert((z_factor * R * t) / p, sol::VolumeDimension::M3, current_state_.v_dim);
 

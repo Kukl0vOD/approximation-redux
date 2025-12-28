@@ -28,7 +28,7 @@ namespace eos
 
 		return b;
 	}
-	double PengRobinson::calculateSolutionA(const std::vector<sol::Component>& components, const std::unordered_map<std::string_view, double>& concentration, Matrix<double> bip, double temperature) const
+	double PengRobinson::calculateSolutionA(const std::vector<sol::Component>& components, const std::unordered_map<std::string, double>& concentration, Matrix<double> bip, double temperature) const
 	{
 		std::vector<double> a_clear;
 		a_clear.reserve(components.size());
@@ -59,7 +59,7 @@ namespace eos
 
 		return a_solution;
 	}
-	double PengRobinson::calculateSolutionB(const std::vector<sol::Component>& components, const std::unordered_map<std::string_view, double>& concentration) const
+	double PengRobinson::calculateSolutionB(const std::vector<sol::Component>& components, const std::unordered_map<std::string, double>& concentration) const
 	{
 		double b_solution = 0;
 
@@ -161,7 +161,7 @@ namespace eos
 
 		return equation.getRoots();
 	}
-	std::vector<double> PengRobinson::calculateZFactor(const std::vector<sol::Component>& components, const std::unordered_map<std::string_view, double>& concentration, Matrix<double> bip, sol::State current_state) const
+	std::vector<double> PengRobinson::calculateZFactor(const std::vector<sol::Component>& components, const std::unordered_map<std::string, double>& concentration, Matrix<double> bip, sol::State current_state) const
 	{
 		double p = utilities::UnitConverter::convert(current_state.pressure, current_state.p_dim, sol::PressureDimension::PA);
 		double t = current_state.temperature;

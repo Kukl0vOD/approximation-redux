@@ -3,7 +3,7 @@
 
 namespace approx
 {
-	Approximator::Approximator(sol::Solution gas_solution, sol::Solution liquid_solution, double pressure_1, double pressure_2, double pressure_3, VolumeType type)
+	Approximator::Approximator(sol::Solution gas_solution, sol::Solution liquid_solution, double pressure_1, double pressure_2, double pressure_3, sol::VolumeType type)
 		: gas_solution_(gas_solution)
 		, liquid_solution_(liquid_solution)
 		, temperature_(gas_solution.getState().temperature)
@@ -22,7 +22,7 @@ namespace approx
 
 		switch (type)
 		{
-		case approx::VolumeType::MOLAR:
+		case sol::VolumeType::MOLAR:
 			gas_solution.setPressure(pressure_1);
 			gas_volume_1 = gas_solution.calculateVolume();
 
@@ -38,7 +38,7 @@ namespace approx
 			liquid_solution.setPressure(pressure_3);
 			liquid_volume_3 = liquid_solution.calculateVolume();
 			break;
-		case approx::VolumeType::SPECIFIC:
+		case sol::VolumeType::SPECIFIC:
 			gas_solution.setPressure(pressure_1);
 			gas_volume_1 = gas_solution.calculateSpecificVolume();
 
@@ -89,7 +89,7 @@ namespace approx
 		return volume;
 	}
 
-	std::unordered_map<std::string_view, double> Approximator::approximateKValue(double pressure, double pressure_0)
+	std::unordered_map<std::string, double> Approximator::approximateKValue(double pressure, double pressure_0)
 	{
 		auto R = constants::universal_gas_constant;
 
@@ -101,7 +101,7 @@ namespace approx
 
 		assert(gas_concentrations.size() == liquid_concentrations.size());
 
-		std::unordered_map<std::string_view, double> k_values(gas_concentrations.size());
+		std::unordered_map<std::string, double> k_values(gas_concentrations.size());
 
 		for (const auto& [name, g_concentration] : gas_concentrations)
 		{

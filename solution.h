@@ -9,7 +9,7 @@
 
 namespace sol
 {
-	using ConcentrationCallback = std::function<std::unordered_map<std::string_view, double>(State)>;
+	using ConcentrationCallback = std::function<std::unordered_map<std::string, double>(State)>;
 
 	class Solution
 	{
@@ -25,7 +25,7 @@ namespace sol
 		Solution(const Solution& other);
 		
 		const std::vector<Component>&	getComponents() const;
-		const std::unordered_map<std::string_view, double>& getConcentrations() const;
+		const std::unordered_map<std::string, double>& getConcentrations() const;
 		const Matrix<double>&			getBIP() const;
 		Phase							getPhase() const;
 		const State&					getState();
@@ -48,7 +48,7 @@ namespace sol
 	private:
 
 		std::vector<Component>			components_;
-		std::unordered_map<std::string_view, double>				concentations_;
+		std::unordered_map<std::string, double>				concentations_;
 		ConcentrationCallback			concentration_callback_;
 		EOSType							eos_type_;
 		std::unique_ptr<eos::ICubicEOS>	eos_;
@@ -58,14 +58,14 @@ namespace sol
 		Phase							phase_;
 	};
 
-	inline std::unordered_map<std::string_view, double> calculateKValue(Solution gas_solution, Solution liquid_solution)
+	inline std::unordered_map<std::string, double> calculateKValue(Solution gas_solution, Solution liquid_solution)
 	{
 		auto gas_concentrations = gas_solution.getConcentrations();
 		auto liquid_concentrations = liquid_solution.getConcentrations();
 
 		assert(gas_concentrations.size() == liquid_concentrations.size());
 
-		std::unordered_map<std::string_view, double> k_values(gas_concentrations.size());
+		std::unordered_map<std::string, double> k_values(gas_concentrations.size());
 
 		for (const auto& [name, g_concentration] : gas_concentrations)
 		{
