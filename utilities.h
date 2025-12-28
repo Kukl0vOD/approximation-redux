@@ -81,19 +81,19 @@ namespace utilities
 		inline static const std::unordered_map<sol::VolumeDimension, double>		 volume_conversion_factor_
 		{																			 
 			{sol::VolumeDimension::M3, 1.0},										 
-			{sol::VolumeDimension::ML, 0.000001},									 
-			{sol::VolumeDimension::LITER, 0.001}									 
+			{sol::VolumeDimension::ML, 1000000.},									 
+			{sol::VolumeDimension::LITER, 1000.}									 
 		};																			 
 		inline static const std::unordered_map<sol::SpecificVolumeDimension, double> specific_volume_conversion_factor_
 		{																			
 			{sol::SpecificVolumeDimension::M3_PER_KG, 1.0},							
 			{sol::SpecificVolumeDimension::LITER_PER_GRAMM, 1.0},					
-			{sol::SpecificVolumeDimension::ML_PER_GRAMM, 0.001}						
+			{sol::SpecificVolumeDimension::ML_PER_GRAMM, 1000.}						
 		};																			
 		inline static const std::unordered_map<sol::MolarMassDimension, double>		 molar_mass_converion_factor_
 		{
 			{sol::MolarMassDimension::KG, 1.0},
-			{sol::MolarMassDimension::GRAMM, 0.001}
+			{sol::MolarMassDimension::GRAMM, 1000.}
 		};
 	};
 }
