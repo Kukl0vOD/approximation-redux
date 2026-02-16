@@ -202,15 +202,15 @@ namespace json
 
     class Document {
     public:
-        explicit Document(Node root);
+        explicit            Document(Node root);
 
-        const Node& GetRoot() const;
+        const Node&         GetRoot() const;
 
         bool operator==(const Document& other) const;
         bool operator!=(const Document& other) const;
 
     private:
-        Node root_;
+        Node                root_;
     };
 
     Document Load(std::istream& input);

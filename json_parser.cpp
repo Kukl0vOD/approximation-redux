@@ -242,7 +242,7 @@ namespace json
 
 					for (const auto& component_concentration : concentration_matrix)
 					{
-						auto interpolated_pressure = utilities::LagrangeInterpolation(pressure_vector, component_concentration.second, state.pressure);
+						auto interpolated_pressure = utilities::CubicSplineInterpolation(pressure_vector, component_concentration.second, state.pressure);
 						result[component_concentration.first] = interpolated_pressure;
 					}
 
