@@ -1,6 +1,8 @@
 #include "approximation.h"
 #include "constants.h"
 
+
+
 namespace approx
 {
 	Approximator::Approximator(sol::Solution gas_solution, sol::Solution liquid_solution, double pressure_1, double pressure_2, double pressure_3, sol::VolumeType type)
@@ -37,6 +39,12 @@ namespace approx
 
 			liquid_solution.setPressure(pressure_3);
 			liquid_volume_3 = liquid_solution.calculateVolume();
+
+			gas_volume_1 = utilities::UnitConverter::convert(gas_volume_1, gas_solution.getState().v_dim, sol::VolumeDimension::M3);
+			gas_volume_2 = utilities::UnitConverter::convert(gas_volume_2, gas_solution.getState().v_dim, sol::VolumeDimension::M3);
+			liquid_volume_1 = utilities::UnitConverter::convert(liquid_volume_1, liquid_solution.getState().v_dim, sol::VolumeDimension::M3);
+			liquid_volume_2 = utilities::UnitConverter::convert(liquid_volume_2, liquid_solution.getState().v_dim, sol::VolumeDimension::M3);
+			liquid_volume_3 = utilities::UnitConverter::convert(liquid_volume_3, liquid_solution.getState().v_dim, sol::VolumeDimension::M3);
 			break;
 		case sol::VolumeType::SPECIFIC:
 			gas_solution.setPressure(pressure_1);
@@ -53,10 +61,20 @@ namespace approx
 
 			liquid_solution.setPressure(pressure_3);
 			liquid_volume_3 = liquid_solution.calculateSpecificVolume();
+
+			gas_volume_1 = utilities::UnitConverter::convert(gas_volume_1, gas_solution.getState().sv_dim, sol::SpecificVolumeDimension::M3_PER_KG);
+			gas_volume_2 = utilities::UnitConverter::convert(gas_volume_2, gas_solution.getState().sv_dim, sol::SpecificVolumeDimension::M3_PER_KG);
+			liquid_volume_1 = utilities::UnitConverter::convert(liquid_volume_1, liquid_solution.getState().sv_dim, sol::SpecificVolumeDimension::M3_PER_KG);
+			liquid_volume_2 = utilities::UnitConverter::convert(liquid_volume_2, liquid_solution.getState().sv_dim, sol::SpecificVolumeDimension::M3_PER_KG);
+			liquid_volume_3 = utilities::UnitConverter::convert(liquid_volume_3, liquid_solution.getState().sv_dim, sol::SpecificVolumeDimension::M3_PER_KG);
 			break;
 		default:
 			break;
 		}
+
+		pressure_1=utilities::UnitConverter::convert(pressure_1, gas_solution.getState().p_dim, sol::PressureDimension::PA);
+		pressure_2=utilities::UnitConverter::convert(pressure_2, gas_solution.getState().p_dim, sol::PressureDimension::PA);
+		pressure_3=utilities::UnitConverter::convert(pressure_3, gas_solution.getState().p_dim, sol::PressureDimension::PA);
 
 		beta_ = pressure_1 * pressure_2 * (gas_volume_1 - gas_volume_2)
 			/ (R * t * (pressure_2 - pressure_1));
@@ -73,25 +91,80 @@ namespace approx
 		alpha_ = (liquid_volume_1 - bl_) * (pressure_1 + pextra_) / (R * t);
 	}
 
-	double Approximator::approximateGasVolume(double pressure)
+	double Approximator::approximateGasVolume(double pressure, sol::PressureDimension from_p_dim, std::variant<sol::VolumeDimension, sol::SpecificVolumeDimension> res_v_dim)
 	{
 		auto R = constants::universal_gas_constant;
+		pressure = utilities::UnitConverter::convert(pressure, from_p_dim, sol::PressureDimension::PA);
+
 		auto volume = (beta_ * R * temperature_) / pressure + bg_;
+		sol::VolumeDimension v_dim;
+		sol::SpecificVolumeDimension sv_dim;
+		switch (type_)
+		{
+		case sol::VolumeType::MOLAR:
+			if (!std::holds_alternative<sol::VolumeDimension>(res_v_dim))
+			{
+				throw std::runtime_error("Type error");
+			}
+			v_dim = std::get<sol::VolumeDimension>(res_v_dim);
+			volume = utilities::UnitConverter::convert(volume, sol::VolumeDimension::M3, v_dim);
+			break;
+		case sol::VolumeType::SPECIFIC:
+			if (!std::holds_alternative<sol::SpecificVolumeDimension>(res_v_dim))
+			{
+				throw std::runtime_error("Type error");
+			}
+			sv_dim = std::get<sol::SpecificVolumeDimension>(res_v_dim);
+			volume = utilities::UnitConverter::convert(volume, sol::SpecificVolumeDimension::M3_PER_KG, sv_dim);
+			break;
+		default:
+			break;
+		}
 
 		return volume;
 	}
 
-	double Approximator::approximateLiquidVolume(double pressure)
+	double Approximator::approximateLiquidVolume(double pressure, sol::PressureDimension from_p_dim, std::variant<sol::VolumeDimension, sol::SpecificVolumeDimension> res_v_dim)
 	{
 		auto R = constants::universal_gas_constant;
-		auto volume = (alpha_ * R * temperature_) / (pressure+pextra_) + bl_;
+		pressure = utilities::UnitConverter::convert(pressure, from_p_dim, sol::PressureDimension::PA);
+
+		auto volume = (alpha_ * R * temperature_) / (pressure + pextra_) + bl_;
+		sol::VolumeDimension v_dim;
+		sol::SpecificVolumeDimension sv_dim;
+		switch (type_)
+		{
+		case sol::VolumeType::MOLAR:
+			if (!std::holds_alternative<sol::VolumeDimension>(res_v_dim))
+			{
+				throw std::runtime_error("Type error");
+			}
+			v_dim = std::get<sol::VolumeDimension>(res_v_dim);
+			volume = utilities::UnitConverter::convert(volume, sol::VolumeDimension::M3, v_dim);
+			break;
+		case sol::VolumeType::SPECIFIC:
+			if (!std::holds_alternative<sol::SpecificVolumeDimension>(res_v_dim))
+			{
+				throw std::runtime_error("Type error");
+			}
+			sv_dim = std::get<sol::SpecificVolumeDimension>(res_v_dim);
+			volume = utilities::UnitConverter::convert(volume, sol::SpecificVolumeDimension::M3_PER_KG, sv_dim);
+			break;
+		default:
+			break;
+		}
 
 		return volume;
 	}
 
-	std::unordered_map<std::string, double> Approximator::approximateKValue(double pressure, double pressure_0)
+	std::unordered_map<std::string, double> Approximator::approximateKValue(double pressure, double pressure_0, sol::PressureDimension from_p_dim)
 	{
 		auto R = constants::universal_gas_constant;
+
+		//gas_solution_.setPressureDimension(from_p_dim);
+		//liquid_solution_.setPressureDimension(from_p_dim);
+		//pressure = utilities::UnitConverter::convert(pressure, from_p_dim, sol::PressureDimension::PA);
+		//pressure_0 = utilities::UnitConverter::convert(pressure_0, from_p_dim, sol::PressureDimension::PA);
 
 		gas_solution_.setPressure(pressure_0);
 		liquid_solution_.setPressure(pressure_0);
