@@ -81,5 +81,22 @@ namespace sol
 
 		return k_values;
 	}
+	inline std::unordered_map<std::string, double> calcualteKValueByWilson(const std::vector<sol::Component>& components, const State& state)
+	{
+		std::unordered_map<std::string, double> kvalues;
 
+		for (const auto& component : components)
+		{
+			auto pc = utilities::UnitConverter::convert(component.critical_pressure, component.p_dim, PressureDimension::PA);
+			auto tc = component.critical_temperature;
+			auto w = component.accentric_factor;
+			auto p = utilities::UnitConverter::convert(state.pressure, state.p_dim, PressureDimension::PA);
+			auto t = state.temperature;
+			auto kvalue = pc / p * exp(5.31 * (1 + w) * (1 - tc / t));
+
+			kvalues[component.name] = kvalue;
+		}
+
+		return kvalues;
+	}
 }
