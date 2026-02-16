@@ -26,6 +26,23 @@ Controller::Controller(const std::string json_filename, Correlation correlation,
     setConcentrationState(0);
 }
 
+Controller::Controller(const Controller& other)
+    : current_index_(other.current_index_)
+    , data_(other.data_)
+{
+    if (other.current_solution_)
+    {
+        current_solution_ = std::make_unique<sol::Solution>(*other.current_solution_);
+    }
+}
+
+Controller::Controller(Controller&& other) noexcept
+    : current_index_(std::move(other.current_index_))
+    , data_(std::move(other.data_))
+    , current_solution_(std::move(other.current_solution_))
+{
+}
+
 ParsedData Controller::getData() const
 {
     return data_;
@@ -81,16 +98,22 @@ void Controller::setMolarMassDimension(sol::MolarMassDimension new_dimension)
     current_solution_->setMolarMassDimension(new_dimension);
 }
 
-void Controller::calculateVolumeInRange(const std::string &json_output_filename, double pressure_start, double pressure_end, double pressure_inc)
+CalculationResult Controller::calculateVolumeInRange(const std::string &json_output_filename, double pressure_start, double pressure_end, double pressure_inc)
 {
     std::ofstream json_out(json_output_filename);
+
+    std::vector<double> rtn_pressures;
+    std::vector<double> rtn_volumes;
+
     json::Array pressures;
     json::Array volumes;
 
     for(double current_pressure=pressure_start; current_pressure<pressure_end;current_pressure+=pressure_inc)
     {
         setPressure(current_pressure);
+        rtn_pressures.push_back(current_pressure);
         pressures.push_back(current_pressure);
+        rtn_volumes.push_back(current_solution_->calculateVolume());
         volumes.push_back(current_solution_->calculateVolume());
     }
 
@@ -107,18 +130,30 @@ void Controller::calculateVolumeInRange(const std::string &json_output_filename,
             .EndDict().Build());
 
     json::Print(output_doc,json_out);
+
+    return
+    {
+        rtn_pressures,
+        rtn_volumes
+    };
 }
 
-void Controller::calculateSpecificVolumeInRange(const std::string &json_output_filename, double pressure_start, double pressure_end, double pressure_inc)
+CalculationResult Controller::calculateSpecificVolumeInRange(const std::string &json_output_filename, double pressure_start, double pressure_end, double pressure_inc)
 {
     std::ofstream json_out(json_output_filename);
+
+    std::vector<double> rtn_pressures;
+    std::vector<double> rtn_volumes;
+
     json::Array pressures;
     json::Array volumes;
 
     for(double current_pressure=pressure_start; current_pressure<pressure_end;current_pressure+=pressure_inc)
     {
         setPressure(current_pressure);
+        rtn_pressures.push_back(current_pressure);
         pressures.push_back(current_pressure);
+        rtn_volumes.push_back(current_solution_->calculateSpecificVolume());
         volumes.push_back(current_solution_->calculateSpecificVolume());
     }
 
@@ -135,9 +170,15 @@ void Controller::calculateSpecificVolumeInRange(const std::string &json_output_f
             .EndDict().Build());
 
     json::Print(output_doc,json_out);
+
+    return
+    {
+        rtn_pressures,
+        rtn_volumes
+    };
 }
 
-void Controller::calculateKValuesByDefinitionInRange(const std::string &json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::pair<size_t, size_t> indecies)
+KValuesResult Controller::calculateKValuesByDefinitionInRange(const std::string& json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::pair<size_t, size_t> indecies)
 {
     std::ofstream json_out(json_output_filename);
 
@@ -147,19 +188,21 @@ void Controller::calculateKValuesByDefinitionInRange(const std::string &json_out
     setConcentrationStateInternal(gas_solution, indecies.first);
     setConcentrationStateInternal(liquid_solution, indecies.second);
 
-    if(gas_solution.getState().temperature!=liquid_solution.getState().temperature
-        || gas_solution.getPhase()==liquid_solution.getPhase())
+    if (gas_solution.getState().temperature != liquid_solution.getState().temperature
+        || gas_solution.getPhase() == liquid_solution.getPhase())
     {
         throw std::logic_error("Different temperatures or same phases");
     }
 
     json::Array pressures;
+    std::vector<double> rtn_pressures;
     std::unordered_map<std::string, std::vector<double>> kvalues;
-    
-    for(double current_pressure=pressure_start; current_pressure<pressure_end;current_pressure+=pressure_inc)
+
+    for (double current_pressure = pressure_start; current_pressure < pressure_end; current_pressure += pressure_inc)
     {
         gas_solution.setPressure(current_pressure);
         liquid_solution.setPressure(current_pressure);
+        rtn_pressures.push_back(current_pressure);
         pressures.push_back(current_pressure);
 
         auto kvalue = sol::calculateKValue(gas_solution, liquid_solution);
@@ -169,31 +212,96 @@ void Controller::calculateKValuesByDefinitionInRange(const std::string &json_out
         }
     }
 
-    auto builded_part = json::Builder{}
-        .StartDict()
-            .Key("P")
-                .StartArray()
-                    .Value(pressures)
-                .EndArray();
+    // Создаем Builder
+    json::Builder builder;
+    builder.StartDict()
+        .Key("P")
+        .StartArray();
 
-    for (const auto& component : current_solution_->getComponents())
-    {
-        json::Array json_kvalue;
-        for (const auto& kvalue : kvalues.at(component.name))
-        {
-            json_kvalue.push_back(kvalue);
-        }
-
-        builded_part = builded_part
-            .Key(component.name)
-                .StartArray()
-                    .Value(json_kvalue)
-                .EndArray();
+    // Добавляем каждое значение давления отдельно
+    for (const auto& pressure : pressures) {
+        builder.Value(pressure);
     }
 
-    auto output_doc = json::Document(builded_part.EndDict().Build());
+    builder.EndArray();
 
-    json::Print(output_doc,json_out);
+    // Добавляем K-значения для каждого компонента
+    for (const auto& component : current_solution_->getComponents())
+    {
+        builder.Key(component.name).StartArray();
+        for (const auto& kvalue : kvalues.at(component.name))
+        {
+            builder.Value(kvalue);
+        }
+        builder.EndArray();
+    }
+
+    auto output_doc = json::Document(builder.EndDict().Build());
+
+    json::Print(output_doc, json_out);
+
+    return
+    {
+        rtn_pressures,
+        kvalues
+    };
+}
+
+KValuesResult Controller::calculateKValuesByWilsonInRange(const std::string& json_output_filename, double pressure_start, double pressure_end, double pressure_inc)
+{
+    std::ofstream json_out(json_output_filename);
+
+    json::Array pressures;
+    std::vector<double> rtn_pressures;
+    std::unordered_map<std::string, std::vector<double>> kvalues;
+
+    for (double current_pressure = pressure_start; current_pressure < pressure_end; current_pressure+=pressure_inc)
+    {
+        setPressure(current_pressure);
+        rtn_pressures.push_back(current_pressure);
+        pressures.push_back(current_pressure);
+
+        auto kvalue = sol::calcualteKValueByWilson(current_solution_->getComponents(), current_solution_->getState());
+
+        for (const auto& component : current_solution_->getComponents())
+        {
+            kvalues[component.name].push_back(kvalue.at(component.name));
+        }
+    }
+
+    // Создаем Builder
+    json::Builder builder;
+    builder.StartDict()
+        .Key("P")
+        .StartArray();
+
+    // Добавляем каждое значение давления отдельно
+    for (const auto& pressure : pressures) {
+        builder.Value(pressure);
+    }
+
+    builder.EndArray();
+
+    // Добавляем K-значения для каждого компонента
+    for (const auto& component : current_solution_->getComponents())
+    {
+        builder.Key(component.name).StartArray();
+        for (const auto& kvalue : kvalues.at(component.name))
+        {
+            builder.Value(kvalue);
+        }
+        builder.EndArray();
+    }
+
+    auto output_doc = json::Document(builder.EndDict().Build());
+
+    json::Print(output_doc, json_out);
+
+    return
+    {
+        rtn_pressures,
+        kvalues
+    };
 }
 
 void Controller::setConcentrationStateInternal(sol::Solution& solution, size_t index) const
@@ -223,6 +331,9 @@ std::string Controller::generateJsonName(const ConcentrationState& c_state, Requ
         break;
     case RequestType::EXACT_KVALUE:
         ss << "exact_kvalue_";
+        break;
+    case RequestType::WILSON_KVALUE:
+        ss << "wilson_kvalue_";
         break;
     case RequestType::APPROXIMATION_MOLAR:
         ss << "app_molar_";
@@ -260,7 +371,7 @@ std::string Controller::generateJsonName(const ConcentrationState& c_state, Requ
     return ss.str();
 }
 
-void Controller::approximateKValuesInRange(const std::string& json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
+KValuesResult Controller::approximateKValuesInRange(const std::string& json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
 {
     std::ofstream json_out(json_output_filename);
 
@@ -277,6 +388,7 @@ void Controller::approximateKValuesInRange(const std::string& json_output_filena
     }
 
     json::Array pressures;
+    std::vector<double> rtn_pressures;
     std::unordered_map<std::string, std::vector<double>> kvalues;
 
     approx::Approximator approximator(gas_solution, liquid_solution, fixed_pressures[0], fixed_pressures[1], fixed_pressures[2]);
@@ -284,7 +396,8 @@ void Controller::approximateKValuesInRange(const std::string& json_output_filena
     for (double current_pressure = pressure_start; current_pressure < pressure_end; current_pressure += pressure_inc)
     {
         pressures.push_back(current_pressure);
-        auto kvalue = approximator.approximateKValue(current_pressure, fixed_pressures[0]);
+        rtn_pressures.push_back(current_pressure);
+        auto kvalue = approximator.approximateKValue(current_pressure, fixed_pressures[0],current_solution_->getState().p_dim);
 
         for (const auto& component : current_solution_->getComponents())
         {
@@ -292,34 +405,39 @@ void Controller::approximateKValuesInRange(const std::string& json_output_filena
         }
     }
 
-    auto builded_part = json::Builder{}
-        .StartDict()
-            .Key("P")
-                .StartArray()
-                    .Value(pressures)
-                .EndArray();
+    json::Builder builder;
+    builder.StartDict()
+        .Key("P")
+        .StartArray();
+
+    for (const auto& pressure : pressures) {
+        builder.Value(pressure);
+    }
+
+    builder.EndArray();
 
     for (const auto& component : current_solution_->getComponents())
     {
-        json::Array json_kvalue;
+        builder.Key(component.name).StartArray();
         for (const auto& kvalue : kvalues.at(component.name))
         {
-            json_kvalue.push_back(kvalue);
+            builder.Value(kvalue);
         }
-
-        builded_part = builded_part
-            .Key(component.name)
-                .StartArray()
-                    .Value(json_kvalue)
-                .EndArray();
+        builder.EndArray();
     }
 
-    auto output_doc = json::Document(builded_part.EndDict().Build());
+    auto output_doc = json::Document(builder.EndDict().Build());
 
     json::Print(output_doc, json_out);
+
+    return
+    {
+        rtn_pressures,
+        kvalues
+    };
 }
 
-void Controller::approximateSpecificVolumeInRange(const std::string &json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
+ApproximationResult Controller::approximateSpecificVolumeInRange(const std::string &json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
 {
     std::ofstream json_out(json_output_filename);
 
@@ -334,6 +452,10 @@ void Controller::approximateSpecificVolumeInRange(const std::string &json_output
     {
         throw std::logic_error("Different temperatures or same phases");
     }
+
+    std::vector<double> rtn_pressures;
+    std::vector<double> rtn_gas_volumes;
+    std::vector<double> rtn_liquid_volumes;
 
     json::Array pressures;
     json::Array gas_volumes;
@@ -343,8 +465,12 @@ void Controller::approximateSpecificVolumeInRange(const std::string &json_output
 
     for (double current_pressure = pressure_start; current_pressure < pressure_end; current_pressure += pressure_inc)
     {
-        auto gas_volume = approximator.approximateGasVolume(current_pressure);
-        auto liquid_volume = approximator.approximateLiquidVolume(current_pressure);
+        auto gas_volume = approximator.approximateGasVolume(current_pressure, gas_solution.getState().p_dim, gas_solution.getState().v_dim);
+        auto liquid_volume = approximator.approximateLiquidVolume(current_pressure, gas_solution.getState().p_dim, gas_solution.getState().v_dim);
+
+        rtn_pressures.push_back(current_pressure);
+        rtn_gas_volumes.push_back(gas_volume);
+        rtn_liquid_volumes.push_back(liquid_volume);
 
         pressures.push_back(current_pressure);
         gas_volumes.push_back(gas_volume);
@@ -368,9 +494,21 @@ void Controller::approximateSpecificVolumeInRange(const std::string &json_output
             .EndDict().Build());
 
     json::Print(output_doc, json_out);
+
+    return
+    {
+        {
+            rtn_pressures,
+            rtn_gas_volumes
+        },
+        {
+            rtn_pressures,
+            rtn_liquid_volumes
+        }
+    };
 }
 
-void Controller::approximateVolumeInRange(const std::string &json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
+ApproximationResult Controller::approximateVolumeInRange(const std::string &json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
 {
     std::ofstream json_out(json_output_filename);
 
@@ -386,6 +524,10 @@ void Controller::approximateVolumeInRange(const std::string &json_output_filenam
         throw std::logic_error("Different temperatures or same phases");
     }
 
+    std::vector<double> rtn_pressures;
+    std::vector<double> rtn_gas_volumes;
+    std::vector<double> rtn_liquid_volumes;
+
     json::Array pressures;
     json::Array gas_volumes;
     json::Array liquid_volumes;
@@ -394,8 +536,12 @@ void Controller::approximateVolumeInRange(const std::string &json_output_filenam
 
     for (double current_pressure = pressure_start; current_pressure < pressure_end; current_pressure += pressure_inc)
     {
-        auto gas_volume = approximator.approximateGasVolume(current_pressure);
-        auto liquid_volume = approximator.approximateLiquidVolume(current_pressure);
+        auto gas_volume = approximator.approximateGasVolume(current_pressure, gas_solution.getState().p_dim, gas_solution.getState().v_dim);
+        auto liquid_volume = approximator.approximateLiquidVolume(current_pressure, gas_solution.getState().p_dim, gas_solution.getState().v_dim);
+
+        rtn_pressures.push_back(current_pressure);
+        rtn_gas_volumes.push_back(gas_volume);
+        rtn_liquid_volumes.push_back(liquid_volume);
 
         pressures.push_back(current_pressure);
         gas_volumes.push_back(gas_volume);
@@ -419,4 +565,16 @@ void Controller::approximateVolumeInRange(const std::string &json_output_filenam
         .EndDict().Build());
 
     json::Print(output_doc, json_out);
+
+    return
+    {
+        {
+            rtn_pressures,
+            rtn_gas_volumes
+        },
+        {
+            rtn_pressures,
+            rtn_liquid_volumes
+        }
+    };
 }
