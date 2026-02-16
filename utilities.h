@@ -40,6 +40,26 @@ namespace utilities
 		double	d_;
 	};
 
+	class CubicSplineInterpolator
+	{
+	public:
+		struct SplineSegment
+		{
+			double a, b, c, d;
+			double x;
+		};
+
+		CubicSplineInterpolator() = default;
+
+		void						build(const std::vector<double>& x_vec, const std::vector<double>& y_vec);
+		double						interpolate(double x) const;
+		bool						isBuilt() const;
+		void						clear();
+
+	private:
+		std::vector<SplineSegment>	splines_;
+	};
+
 	inline double LagrangeInterpolation(const std::vector<double>& x_vec, const std::vector<double>& y_vec, double x)
 	{
 		assert(x_vec.size() == y_vec.size() && "Expected x values size = y values size");
@@ -62,6 +82,75 @@ namespace utilities
 
 		return y;
 	}
+
+	inline double CubicSplineInterpolation(const std::vector<double>& x_vec,
+		const std::vector<double>& y_vec,
+		double x,
+		bool use_log_extrapolation = true)
+	{
+		assert(x_vec.size() == y_vec.size() && "Expected x values size = y values size");
+		assert(x_vec.size() >= 2 && "At least 2 points required for spline interpolation");
+
+		if (x <= x_vec.front())
+		{
+			if (use_log_extrapolation && y_vec[0] > 0 && y_vec[1] > 0)
+			{
+				double x0 = x_vec[0];
+				double x1 = x_vec[1];
+				double log_y0 = std::log(y_vec[0]);
+				double log_y1 = std::log(y_vec[1]);
+
+				double log_slope = (log_y1 - log_y0) / (x1 - x0);
+				double log_y = log_y0 + log_slope * (x - x0);
+
+				return std::exp(log_y);
+			}
+			else
+			{
+				double x0 = x_vec[0];
+				double x1 = x_vec[1];
+				double y0 = y_vec[0];
+				double y1 = y_vec[1];
+
+				double slope = (y1 - y0) / (x1 - x0);
+				return y0 + slope * (x - x0);
+			}
+		}
+
+		if (x >= x_vec.back())
+		{
+			size_t n = x_vec.size();
+			if (use_log_extrapolation && y_vec[n - 2] > 0 && y_vec[n - 1] > 0)
+			{
+				double x0 = x_vec[n - 2];
+				double x1 = x_vec[n - 1];
+				double log_y0 = std::log(y_vec[n - 2]);
+				double log_y1 = std::log(y_vec[n - 1]);
+
+				double log_slope = (log_y1 - log_y0) / (x1 - x0);
+				double log_y = log_y1 + log_slope * (x - x1);
+
+				return std::exp(log_y);
+			}
+			else
+			{
+				double x0 = x_vec[n - 2];
+				double x1 = x_vec[n - 1];
+				double y0 = y_vec[n - 2];
+				double y1 = y_vec[n - 1];
+
+				double slope = (y1 - y0) / (x1 - x0);
+				return y1 + slope * (x - x1);
+			}
+		}
+
+		utilities::CubicSplineInterpolator spline;
+		spline.build(x_vec, y_vec);
+
+		double y = spline.interpolate(x);
+		return y;
+	}
+	
 
 	class UnitConverter
 	{
