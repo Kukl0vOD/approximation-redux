@@ -108,13 +108,33 @@ CalculationResult Controller::calculateVolumeInRange(const std::string &json_out
     json::Array pressures;
     json::Array volumes;
 
-    for(double current_pressure=pressure_start; current_pressure<pressure_end;current_pressure+=pressure_inc)
+    for (double current_pressure = pressure_start; current_pressure < pressure_end; current_pressure += pressure_inc)
     {
         setPressure(current_pressure);
-        rtn_pressures.push_back(current_pressure);
-        pressures.push_back(current_pressure);
-        rtn_volumes.push_back(current_solution_->calculateVolume());
-        volumes.push_back(current_solution_->calculateVolume());
+        double current_volume = current_solution_->calculateVolume();
+
+        if (rtn_pressures.empty()) 
+        {
+            rtn_pressures.push_back(current_pressure);
+            pressures.push_back(current_pressure);
+            rtn_volumes.push_back(current_volume);
+            volumes.push_back(current_volume);
+            continue;
+        }
+
+        double delta = pressure_inc;
+        double epsilon = 1.0; 
+
+        double prev_volume = rtn_volumes.back();
+        double volume_diff = std::abs(current_volume - prev_volume);
+
+        if (volume_diff < epsilon) 
+        {
+            rtn_pressures.push_back(current_pressure);
+            pressures.push_back(current_pressure);
+            rtn_volumes.push_back(current_volume);
+            volumes.push_back(current_volume);
+        }
     }
 
     auto output_doc = json::Document(json::Builder{}
@@ -148,13 +168,33 @@ CalculationResult Controller::calculateSpecificVolumeInRange(const std::string &
     json::Array pressures;
     json::Array volumes;
 
-    for(double current_pressure=pressure_start; current_pressure<pressure_end;current_pressure+=pressure_inc)
+    for (double current_pressure = pressure_start; current_pressure < pressure_end; current_pressure += pressure_inc)
     {
         setPressure(current_pressure);
-        rtn_pressures.push_back(current_pressure);
-        pressures.push_back(current_pressure);
-        rtn_volumes.push_back(current_solution_->calculateSpecificVolume());
-        volumes.push_back(current_solution_->calculateSpecificVolume());
+        double current_volume = current_solution_->calculateSpecificVolume();
+
+        if (rtn_pressures.empty())
+        {
+            rtn_pressures.push_back(current_pressure);
+            pressures.push_back(current_pressure);
+            rtn_volumes.push_back(current_volume);
+            volumes.push_back(current_volume);
+            continue;
+        }
+
+        double delta = pressure_inc;
+        double epsilon = 0.01;
+
+        double prev_volume = rtn_volumes.back();
+        double volume_diff = std::abs(current_volume - prev_volume);
+
+        if (volume_diff < epsilon)
+        {
+            rtn_pressures.push_back(current_pressure);
+            pressures.push_back(current_pressure);
+            rtn_volumes.push_back(current_volume);
+            volumes.push_back(current_volume);
+        }
     }
 
     auto output_doc = json::Document(json::Builder{}
@@ -465,8 +505,8 @@ ApproximationResult Controller::approximateSpecificVolumeInRange(const std::stri
 
     for (double current_pressure = pressure_start; current_pressure < pressure_end; current_pressure += pressure_inc)
     {
-        auto gas_volume = approximator.approximateGasVolume(current_pressure, gas_solution.getState().p_dim, gas_solution.getState().v_dim);
-        auto liquid_volume = approximator.approximateLiquidVolume(current_pressure, gas_solution.getState().p_dim, gas_solution.getState().v_dim);
+        auto gas_volume = approximator.approximateGasVolume(current_pressure, gas_solution.getState().p_dim, gas_solution.getState().sv_dim);
+        auto liquid_volume = approximator.approximateLiquidVolume(current_pressure, gas_solution.getState().p_dim, gas_solution.getState().sv_dim);
 
         rtn_pressures.push_back(current_pressure);
         rtn_gas_volumes.push_back(gas_volume);
