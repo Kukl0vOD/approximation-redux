@@ -32,6 +32,7 @@ namespace eos
 		virtual std::vector<double>			calculateZFactor(const sol::Component& component) const = 0;
 		virtual std::vector<double>			calculateZFactor(const sol::Component& component, sol::State current_state) const = 0;
 		virtual std::vector<double>			calculateZFactor(const std::vector<sol::Component>& components, const std::unordered_map<std::string, double>& concentration, Matrix<double> bip, sol::State current_state) const = 0;
+		virtual std::vector<double>			calculateZFactor(const std::vector<sol::Component>& components, const std::unordered_map<std::string, double>& concentration, Matrix<double> bip, sol::State current_state, double R) const = 0;
 	};
 
 	class PengRobinson : public ICubicEOS
@@ -48,6 +49,7 @@ namespace eos
 		std::vector<double>					calculateZFactor(const sol::Component& component) const override;
 		std::vector<double>					calculateZFactor(const sol::Component& component, sol::State current_state) const override;
 		std::vector<double>					calculateZFactor(const std::vector<sol::Component>& components, const std::unordered_map<std::string, double>& concentration, Matrix<double> bip, sol::State current_state) const override;
+		std::vector<double>					calculateZFactor(const std::vector<sol::Component>& components, const std::unordered_map<std::string, double>& concentration, Matrix<double> bip, sol::State current_state, double R) const override;
 	};
 
 	class EOSFactory

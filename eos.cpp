@@ -177,6 +177,21 @@ namespace eos
 
 		return equation.getRoots();
 	}
+	std::vector<double> PengRobinson::calculateZFactor(const std::vector<sol::Component>& components, const std::unordered_map<std::string, double>& concentration, Matrix<double> bip, sol::State current_state, double R) const
+	{
+		double p = utilities::UnitConverter::convert(current_state.pressure, current_state.p_dim, sol::PressureDimension::PA);
+		double t = current_state.temperature;
+
+		double a = calculateSolutionA(components, concentration, bip, t);
+		double b = calculateSolutionB(components, concentration);
+
+		double A = a * p / pow(R * t, 2);
+		double B = b * p / (R * t);
+
+		utilities::CubicPolynomial equation(1.0, -(1.0 - B), (A - 3.0 * B * B - 2.0 * B), -(A * B - B * B - B * B * B));
+
+		return equation.getRoots();
+	}
 	ICubicEOS::~ICubicEOS() = default;
 	std::unique_ptr<ICubicEOS> EOSFactory::createEOS(EOSType type)
 	{
