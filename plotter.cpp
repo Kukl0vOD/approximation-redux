@@ -21,13 +21,28 @@ void Plotter::plotComparativeMolarVolumes(double pressure_start, double pressure
 
     auto approximation = controller_->approximateVolumeInRange(Controller::generateJsonName(gas_state, RequestType::APPROXIMATION_MOLAR), pressure_start, pressure_end, pressure_inc, fixed_pressures, indecies);
 
-    plotTwoVectors(generatePNGName("gas", gas_state.temperature), gas_calculation.pressures, gas_calculation.volumes, approximation.gas.pressures, approximation.gas.volumes);
-    plotTwoVectors(generatePNGName("liquid", liquid_state.temperature), liquid_calculation.pressures, liquid_calculation.volumes, approximation.liquid.pressures, approximation.liquid.volumes);
+    plotTwoVectors(generatePNGName("molar_gas", gas_state.temperature), gas_calculation.pressures, gas_calculation.volumes, approximation.gas.pressures, approximation.gas.volumes);
+    plotTwoVectors(generatePNGName("molar_liquid", liquid_state.temperature), liquid_calculation.pressures, liquid_calculation.volumes, approximation.liquid.pressures, approximation.liquid.volumes);
 }
 
-void Plotter::plotCompatativeSpecificVolumes(double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
+void Plotter::plotComparativeSpecificVolumes(double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
 {
+    auto data = controller_->getData();
+    auto gas_name = data.names[indecies.first];
+    auto liquid_name = data.names[indecies.second];
+    auto gas_state = data.states.at(gas_name);
+    auto liquid_state = data.states.at(liquid_name);
 
+    controller_->setConcentrationState(indecies.first);
+    auto gas_calculation = controller_->calculateSpecificVolumeInRange(Controller::generateJsonName(gas_state, RequestType::EXACT_SPECIFIC), pressure_start, pressure_end, pressure_inc);
+
+    controller_->setConcentrationState(indecies.second);
+    auto liquid_calculation = controller_->calculateSpecificVolumeInRange(Controller::generateJsonName(liquid_state, RequestType::EXACT_SPECIFIC), pressure_start, pressure_end, pressure_inc);
+
+    auto approximation = controller_->approximateSpecificVolumeInRange(Controller::generateJsonName(gas_state, RequestType::APPROXIMATION_SPECIFIC), pressure_start, pressure_end, pressure_inc, fixed_pressures, indecies);
+
+    plotTwoVectors(generatePNGName("specific_gas", gas_state.temperature), gas_calculation.pressures, gas_calculation.volumes, approximation.gas.pressures, approximation.gas.volumes);
+    plotTwoVectors(generatePNGName("specifi_liquid", liquid_state.temperature), liquid_calculation.pressures, liquid_calculation.volumes, approximation.liquid.pressures, approximation.liquid.volumes);
 }
 
 void Plotter::plotComparativeKValues(double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
