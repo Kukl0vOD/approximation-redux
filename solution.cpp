@@ -52,17 +52,6 @@ namespace sol
 
 	const State& Solution::getState()
 	{
-		/*
-		if (!current_state_.volume)
-		{
-			current_state_.volume = calculateVolume();
-		}
-		if (!current_state_.specific_volume)
-		{
-			current_state_.specific_volume = calculateSpecificVolume();
-		}
-		*/
-
 		return current_state_;
 	}
 
@@ -160,10 +149,22 @@ namespace sol
 		auto roots = eos_->calculateZFactor(components_, concentations_, bip_, current_state_);
 		auto z_factor = 0.0;
 
+		auto not_negative_comparator = [](double a, double b)
+			{
+				bool a_valid = (a >= 0);
+				bool b_valid = (b >= 0);
+
+				if (a_valid && !b_valid) return true;
+				if (!a_valid && b_valid) return false;
+				if (!a_valid && !b_valid) return false;
+
+				return a < b;
+			};
+
 		switch (phase_)
 		{
 		case sol::Phase::LIQUID:
-			z_factor = *std::min_element(roots.begin(), roots.end());
+			z_factor = *std::min_element(roots.begin(), roots.end(), not_negative_comparator);
 			break;
 		case sol::Phase::GAS:
 			z_factor = *std::max_element(roots.begin(), roots.end());
@@ -184,7 +185,6 @@ namespace sol
 			return *current_state_.specific_volume;
 		}
 
-		double volume = utilities::UnitConverter::convert(calculateVolume(), current_state_.v_dim, sol::VolumeDimension::M3);
 		double weight = 0;
 
 		for (const auto& component : components_)
@@ -193,7 +193,38 @@ namespace sol
 			weight += concentations_[component.name] * molar_mass;
 		}
 
-		current_state_.specific_volume = utilities::UnitConverter::convert(volume / weight, sol::SpecificVolumeDimension::M3_PER_KG, current_state_.sv_dim);
+		auto R = constants::universal_gas_constant / weight;
+		auto t = current_state_.temperature;
+		auto p = utilities::UnitConverter::convert(current_state_.pressure, current_state_.p_dim, sol::PressureDimension::PA);
+		auto roots = eos_->calculateZFactor(components_, concentations_, bip_, current_state_, R);
+		auto z_factor = 0.0;
+
+
+		auto not_negative_comparator = [](double a, double b) 
+			{
+			bool a_valid = (a >= 0);
+			bool b_valid = (b >= 0);
+
+			if (a_valid && !b_valid) return true;
+			if (!a_valid && b_valid) return false;
+			if (!a_valid && !b_valid) return false;
+
+			return a < b;
+			};
+
+		switch (phase_)
+		{
+		case sol::Phase::LIQUID:
+			z_factor = *std::min_element(roots.begin(), roots.end(), not_negative_comparator);
+			break;
+		case sol::Phase::GAS:
+			z_factor = *std::max_element(roots.begin(), roots.end());
+			break;
+		default:
+			break;
+		}
+
+		current_state_.specific_volume = utilities::UnitConverter::convert((z_factor * R * t) / p, sol::SpecificVolumeDimension::M3_PER_KG, current_state_.sv_dim);
 
 		return *current_state_.specific_volume;
 	}
