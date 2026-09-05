@@ -105,13 +105,7 @@ if(REDUX_BUILD_APP)
         target_compile_options(redux PRIVATE -Wall -Wextra -Wpedantic)
     endif()
 
-    add_custom_command(TARGET redux POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-                ${CMAKE_CURRENT_SOURCE_DIR}/resources/data
-                $<TARGET_FILE_DIR:redux>
-    )
-
     set_property(TARGET redux PROPERTY
-        VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:redux>"
+        VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     )
 endif()

@@ -12,9 +12,11 @@ namespace eos
 		double p_c = component.critical_pressure;
 		double R = constants::universal_gas_constant;
 
-		double m = 0.37464 + 1.54226 * w - 0.2699 * w * w;
+		double m = constants::peng_robinson::m_base
+			+ constants::peng_robinson::m_linear_factor * w
+			- constants::peng_robinson::m_quadratic_factor * w * w;
 		double alpha = (1.0 + m * (1.0 - sqrt(temperature / t_c))) * (1.0 + m * (1.0 - sqrt(temperature / t_c)));
-		double a = 0.45724 * R * R * t_c * t_c * alpha / p_c;
+		double a = constants::peng_robinson::a_factor * R * R * t_c * t_c * alpha / p_c;
 
 		return a;
 	}
@@ -24,7 +26,7 @@ namespace eos
 		double p_c = component.critical_pressure;
 		double R = constants::universal_gas_constant;
 
-		double b = 0.07780 * R * t_c / p_c;
+		double b = constants::peng_robinson::b_factor * R * t_c / p_c;
 
 		return b;
 	}

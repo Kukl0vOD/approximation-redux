@@ -1,13 +1,34 @@
 #include "view/matplot_renderer.h"
 
+#include "application/resource_paths.h"
+
 #include <matplot/matplot.h>
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
 #include <stdexcept>
 
 namespace
 {
+    class ScopedCurrentPath
+    {
+    public:
+        explicit ScopedCurrentPath(const std::filesystem::path& path)
+            : original_path_(std::filesystem::current_path())
+        {
+            std::filesystem::current_path(path);
+        }
+
+        ~ScopedCurrentPath()
+        {
+            std::filesystem::current_path(original_path_);
+        }
+
+    private:
+        std::filesystem::path original_path_;
+    };
+
     std::string lineStyle(PlotLineStyle style)
     {
         switch (style)
@@ -70,10 +91,10 @@ namespace
         {
             const double log_min = std::log10(min_value);
             const double log_max = std::log10(max_value);
-            return std::pow(10.0, std::log10(value) + offset * 0.0125 * (log_max - log_min));
+            return std::pow(view::plot_config::log_scale_base, std::log10(value) + offset * view::plot_config::label_offset_scale * (log_max - log_min));
         }
 
-        return value + offset * 0.0125 * (max_value - min_value);
+        return value + offset * view::plot_config::label_offset_scale * (max_value - min_value);
     }
 }
 
@@ -84,6 +105,10 @@ void MatplotRenderer::render(const PlotSpec& spec) const
         throw std::logic_error("Plot spec has no series");
     }
 
+    const auto output_path = app_paths::plotPath(spec.output_filename);
+    std::filesystem::create_directories(output_path.parent_path());
+    const ScopedCurrentPath scoped_path(output_path.parent_path());
+
     auto figure = matplot::figure(true);
     figure->size(spec.width, spec.height);
     figure->font(spec.font);
@@ -91,7 +116,12 @@ void MatplotRenderer::render(const PlotSpec& spec) const
     figure->color("white");
 
     auto axes = figure->current_axes();
-    axes->position({ 0.09f, 0.09f, 0.88f, 0.88f });
+    axes->position({
+        view::plot_config::axes_left,
+        view::plot_config::axes_bottom,
+        view::plot_config::axes_width,
+        view::plot_config::axes_height
+    });
     axes->font(spec.font);
     axes->font_size(static_cast<float>(spec.axis_font_size));
     axes->xlabel(spec.x_label);
@@ -105,8 +135,8 @@ void MatplotRenderer::render(const PlotSpec& spec) const
     axes->y_axis().color("black");
     axes->x_axis().label_font_size(static_cast<float>(spec.axis_font_size));
     axes->y_axis().label_font_size(static_cast<float>(spec.axis_font_size));
-    axes->x_axis().tick_length(0.75f);
-    axes->y_axis().tick_length(0.75f);
+    axes->x_axis().tick_length(view::plot_config::axis_tick_length);
+    axes->y_axis().tick_length(view::plot_config::axis_tick_length);
 
     if (spec.show_title && !spec.title.empty())
     {
@@ -122,7 +152,10 @@ void MatplotRenderer::render(const PlotSpec& spec) const
         axes->y_axis().scale(matplot::axis_type::axis_scale::log);
     }
 
-    axes->run_command("set border 31 front lw 1 lc rgb 'black'");
+    axes->run_command(
+        "set border " + std::to_string(view::plot_config::gnuplot_full_border_mask) +
+        " front lw " + std::to_string(view::plot_config::gnuplot_border_line_width) +
+        " lc rgb 'black'");
     axes->run_command("set tics in mirror");
     axes->run_command("set xtics font '" + spec.font + "," + std::to_string(static_cast<int>(spec.axis_font_size)) + "'");
     axes->run_command("set ytics font '" + spec.font + "," + std::to_string(static_cast<int>(spec.axis_font_size)) + "'");
@@ -161,7 +194,7 @@ void MatplotRenderer::render(const PlotSpec& spec) const
         const auto y = applyOffset(label.y, label.offset_y, y_min, y_max, spec.log_y);
         auto text = axes->text(x, y, label.text);
         text->font(spec.font);
-        text->font_size(static_cast<float>(spec.axis_font_size));
+        text->font_size(static_cast<float>(spec.label_font_size));
         text->color("black");
     }
 
@@ -184,8 +217,8 @@ void MatplotRenderer::render(const PlotSpec& spec) const
         axes->run_command("unset key");
     }
 
-    if (!figure->save(spec.output_filename))
+    if (!figure->save(output_path.filename().string()))
     {
-        throw std::runtime_error("Can't save plot: " + spec.output_filename);
+        throw std::runtime_error("Can't save plot: " + output_path.string());
     }
 }

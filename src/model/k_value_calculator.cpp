@@ -1,5 +1,6 @@
 #include "model/k_value_calculator.h"
 
+#include "constants.h"
 #include "utilities.h"
 
 #include <cassert>
@@ -46,7 +47,7 @@ namespace sol
 			auto w = component.accentric_factor;
 			auto p = utilities::UnitConverter::convert(state.pressure, state.p_dim, PressureDimension::PA);
 			auto t = state.temperature;
-			auto kvalue = pc / p * exp(5.31 * (1 + w) * (1 - tc / t));
+			auto kvalue = pc / p * exp(constants::wilson::exponent_factor * (1 + w) * (1 - tc / t));
 
 			kvalues[component.name] = kvalue;
 		}

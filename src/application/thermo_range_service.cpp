@@ -1,5 +1,7 @@
 #include "application/thermo_range_service.h"
 
+#include "constants.h"
+
 #include <cmath>
 
 namespace
@@ -44,7 +46,7 @@ CalculationResult ThermoRangeService::calculateMolarVolumeRange(
     PressureRange range
 )
 {
-    return calculateRange(solution, range, 1.0, &sol::Solution::calculateVolume);
+    return calculateRange(solution, range, constants::application::molar_volume_epsilon, &sol::Solution::calculateVolume);
 }
 
 CalculationResult ThermoRangeService::calculateSpecificVolumeRange(
@@ -52,5 +54,5 @@ CalculationResult ThermoRangeService::calculateSpecificVolumeRange(
     PressureRange range
 )
 {
-    return calculateRange(solution, range, 0.01, &sol::Solution::calculateSpecificVolume);
+    return calculateRange(solution, range, constants::application::specific_volume_epsilon, &sol::Solution::calculateSpecificVolume);
 }

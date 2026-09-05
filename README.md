@@ -59,7 +59,7 @@ cmake -S . -B build -DREDUX_BUILD_APP=OFF
 
 ## Запуск
 
-После сборки CMake копирует файлы из `resources/data` в каталог с исполняемым файлом. Программа ожидает, что `extracted_solution_data.json` находится в рабочем каталоге.
+Программа ищет входные данные в `resources/data/input`. Сгенерированные JSON сохраняются в `resources/data/output`, а PNG-графики - в `resources/plots`.
 
 Пример запуска для Visual Studio/MSVC:
 
@@ -74,7 +74,7 @@ build/Release/redux.exe
 Основной входной файл:
 
 ```text
-resources/data/extracted_solution_data.json
+resources/data/input/extracted_solution_data.json
 ```
 
 Файл содержит:
@@ -96,9 +96,9 @@ resources/data/extracted_solution_data.json
 
 ## Выходные данные
 
-Расчетные методы записывают JSON-файлы с результатами в текущий рабочий каталог. Имена формируются через `Controller::generateJsonName`.
+Расчетные методы записывают JSON-файлы с результатами в `resources/data/output`. Имена формируются через `Controller::generateJsonName`.
 
-Графики сохраняются как PNG-файлы. Имена формируются через `Plotter::generatePNGName`.
+Графики сохраняются как PNG-файлы в `resources/plots`. Имена формируются через `Plotter::generatePNGName`.
 
 Основные типы выходных файлов:
 

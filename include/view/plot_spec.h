@@ -1,5 +1,7 @@
 #pragma once
 
+#include "view/plot_config.h"
+
 #include <string>
 #include <vector>
 
@@ -16,7 +18,7 @@ struct PlotSeries
     std::vector<double> x;
     std::vector<double> y;
     std::string color = "black";
-    double line_width = 2.0;
+    double line_width = view::plot_config::default_series_line_width;
     PlotLineStyle line_style = PlotLineStyle::Solid;
 };
 
@@ -25,8 +27,8 @@ struct PlotTextLabel
     std::string text;
     double x = 0.0;
     double y = 0.0;
-    double offset_x = -1.0;
-    double offset_y = 1.0;
+    double offset_x = view::plot_config::default_label_offset_x;
+    double offset_y = view::plot_config::default_label_offset_y;
 };
 
 struct PlotSpec
@@ -39,12 +41,13 @@ struct PlotSpec
     bool log_y = false;
     bool show_legend = false;
     bool show_title = false;
-    int width = 1280;
-    int height = 960;
+    int width = view::plot_config::default_width;
+    int height = view::plot_config::default_height;
     std::string font = "Arial";
-    double base_font_size = 14.0;
-    double axis_font_size = 24.0;
-    double legend_font_size = 14.0;
+    double base_font_size = view::plot_config::default_base_font_size;
+    double axis_font_size = view::plot_config::default_axis_font_size;
+    double legend_font_size = view::plot_config::default_legend_font_size;
+    double label_font_size = view::plot_config::default_label_font_size;
     std::vector<PlotSeries> series;
     std::vector<PlotTextLabel> labels;
 };

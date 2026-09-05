@@ -1,11 +1,20 @@
 #include "application/json_result_writer.h"
 
+#include "application/resource_paths.h"
 #include "json_builder.h"
 
+#include <filesystem>
 #include <fstream>
 
 namespace
 {
+    std::ofstream openOutputJson(const std::string& output_filename)
+    {
+        const auto output_path = app_paths::outputDataPath(output_filename);
+        std::filesystem::create_directories(output_path.parent_path());
+        return std::ofstream(output_path);
+    }
+
     json::Array toJsonArray(const std::vector<double>& values)
     {
         json::Array array;
@@ -23,7 +32,7 @@ void JsonResultWriter::writeCalculationResult(
     const std::string& value_key
 )
 {
-    std::ofstream json_out(output_filename);
+    auto json_out = openOutputJson(output_filename);
 
     auto output_doc = json::Document(json::Builder{}
         .StartDict()
@@ -46,7 +55,7 @@ void JsonResultWriter::writeKValuesResult(
     const std::string& output_filename
 )
 {
-    std::ofstream json_out(output_filename);
+    auto json_out = openOutputJson(output_filename);
 
     json::Builder builder;
     builder.StartDict()
@@ -80,7 +89,7 @@ void JsonResultWriter::writeMolarApproximationResult(
     const std::string& output_filename
 )
 {
-    std::ofstream json_out(output_filename);
+    auto json_out = openOutputJson(output_filename);
 
     auto output_doc = json::Document(json::Builder{}
         .StartDict()
@@ -114,7 +123,7 @@ void JsonResultWriter::writeSpecificApproximationResult(
     const std::string& output_filename
 )
 {
-    std::ofstream json_out(output_filename);
+    auto json_out = openOutputJson(output_filename);
 
     auto output_doc = json::Document(json::Builder{}
         .StartDict()
@@ -140,7 +149,7 @@ void JsonResultWriter::writeErrorAnalysisResult(
     const std::string& output_filename
 )
 {
-    std::ofstream json_out(output_filename);
+    auto json_out = openOutputJson(output_filename);
 
     auto output_doc = json::Document(json::Builder{}
         .StartDict()

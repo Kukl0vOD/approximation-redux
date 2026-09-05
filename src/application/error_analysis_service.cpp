@@ -1,5 +1,7 @@
 #include "application/error_analysis_service.h"
 
+#include "constants.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -7,7 +9,7 @@ namespace
 {
     double relativeError(double exact, double approximate)
     {
-        return std::abs(exact - approximate) / exact * 100;
+        return std::abs(exact - approximate) / exact * constants::application::percentage_multiplier;
     }
 
     std::vector<double> calculateErrors(

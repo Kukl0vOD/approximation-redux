@@ -6,13 +6,14 @@
 #include "application/json_result_writer.h"
 #include "application/k_value_range_service.h"
 #include "application/phase_pair_factory.h"
+#include "application/resource_paths.h"
 #include "application/thermo_range_service.h"
 
 #include <sstream>
 
 Controller::Controller(const std::string json_filename, Correlation correlation, EOSType eos_type, sol::Phase phase, sol::State init_state)
 {
-    std::ifstream json_in(json_filename);
+    std::ifstream json_in(app_paths::inputDataPath(json_filename));
     if(!json_in.is_open())
     {
         throw std::runtime_error("Can't open data file");
