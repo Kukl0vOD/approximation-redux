@@ -31,6 +31,14 @@ struct PlotTextLabel
     double offset_y = view::plot_config::default_label_offset_y;
 };
 
+struct PlotPoint
+{
+    double x = 0.0;
+    double y = 0.0;
+    std::string color = "black";
+    double marker_size = view::plot_config::default_point_marker_size;
+};
+
 struct PlotSpec
 {
     std::string title;
@@ -49,5 +57,6 @@ struct PlotSpec
     double legend_font_size = view::plot_config::default_legend_font_size;
     double label_font_size = view::plot_config::default_label_font_size;
     std::vector<PlotSeries> series;
+    std::vector<PlotPoint> points;
     std::vector<PlotTextLabel> labels;
 };

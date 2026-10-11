@@ -185,6 +185,15 @@ void MatplotRenderer::render(const PlotSpec& spec) const
         legend_labels.push_back(series.label);
     }
 
+    for (const auto& point : spec.points)
+    {
+        auto marker = axes->plot(std::vector<double>{ point.x }, std::vector<double>{ point.y }, "o");
+        marker->marker_size(static_cast<float>(point.marker_size));
+        marker->marker_face(true);
+        marker->color(point.color);
+        marker->marker_color(point.color);
+    }
+
     auto [x_min, x_max] = dataBounds(spec, true);
     auto [y_min, y_max] = dataBounds(spec, false);
 

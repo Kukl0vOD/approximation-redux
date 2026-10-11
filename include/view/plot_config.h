@@ -6,6 +6,7 @@ namespace view::plot_config
     inline constexpr int default_height = 960;
 
     inline constexpr double default_series_line_width = 2.0;
+    inline constexpr double default_point_marker_size = 10.0;
     inline constexpr double exact_line_width = 2.0;
     inline constexpr double wilson_line_width = 4.0;
     inline constexpr double approximation_line_width = 6.0;
@@ -23,6 +24,8 @@ namespace view::plot_config
     inline constexpr double other_end_label_offset_x = -1.0;
     inline constexpr double middle_label_offset_x = 0.5;
     inline constexpr double middle_label_offset_y = 1.0;
+    inline constexpr double intersection_label_offset_x = 1.0;
+    inline constexpr double intersection_label_offset_y = -3.0;
     inline constexpr double label_overlap_x_threshold = 0.08;
     inline constexpr double label_overlap_y_threshold = 0.08;
     inline constexpr double label_overlap_offset_step_y = 4.0;

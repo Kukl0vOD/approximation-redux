@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <stdexcept>
 #include <string>
 
 namespace app_paths
@@ -32,57 +33,49 @@ namespace app_paths
         return findProjectRoot() / "resources";
     }
 
-    inline std::filesystem::path inputDataDir()
+    inline std::filesystem::path inputDir()
     {
-        return resourcesDir() / "data" / "input";
+        return resourcesDir() / "input";
     }
 
-    inline std::filesystem::path outputDataDir()
+    inline std::filesystem::path outputDir()
     {
-        return resourcesDir() / "data" / "output";
+        return resourcesDir() / "output";
+    }
+
+    inline std::filesystem::path jsonOutputDir()
+    {
+        return outputDir() / "json";
     }
 
     inline std::filesystem::path plotsDir()
     {
-        return resourcesDir() / "plots";
+        return outputDir() / "plots";
+    }
+
+    inline std::filesystem::path validateRelativePath(const std::string& filename)
+    {
+        const auto path = std::filesystem::path(filename).lexically_normal();
+        if (path.empty() || path.is_absolute() || *path.begin() == "..")
+        {
+            throw std::invalid_argument("Resource path must stay inside the configured resource directory: " + filename);
+        }
+
+        return path;
     }
 
     inline std::filesystem::path inputDataPath(const std::string& filename)
     {
-        const std::filesystem::path path(filename);
-        if (path.is_absolute() || std::filesystem::exists(path))
-        {
-            return path;
-        }
-
-        const auto input_path = inputDataDir() / path;
-        if (std::filesystem::exists(input_path))
-        {
-            return input_path;
-        }
-
-        return resourcesDir() / "data" / path;
+        return inputDir() / validateRelativePath(filename);
     }
 
     inline std::filesystem::path outputDataPath(const std::string& filename)
     {
-        const std::filesystem::path path(filename);
-        if (path.is_absolute() || path.has_parent_path())
-        {
-            return path;
-        }
-
-        return outputDataDir() / path;
+        return jsonOutputDir() / validateRelativePath(filename);
     }
 
     inline std::filesystem::path plotPath(const std::string& filename)
     {
-        const std::filesystem::path path(filename);
-        if (path.is_absolute() || path.has_parent_path())
-        {
-            return path;
-        }
-
-        return plotsDir() / path;
+        return plotsDir() / validateRelativePath(filename);
     }
 }

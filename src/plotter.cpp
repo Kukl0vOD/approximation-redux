@@ -6,9 +6,80 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <optional>
+#include <sstream>
 
 namespace
 {
+    struct Intersection
+    {
+        double pressure;
+        double volume;
+    };
+
+    std::optional<Intersection> findIntersection(
+        const std::vector<double>& pressures1,
+        const std::vector<double>& volumes1,
+        const std::vector<double>& pressures2,
+        const std::vector<double>& volumes2)
+    {
+        const size_t points_count = (std::min)({ pressures1.size(), volumes1.size(), pressures2.size(), volumes2.size() });
+        if (points_count == 0)
+        {
+            return std::nullopt;
+        }
+
+        constexpr double pressure_tolerance = 1e-9;
+        auto difference = [&](size_t index)
+        {
+            return volumes1[index] - volumes2[index];
+        };
+
+        for (size_t index = 0; index < points_count; ++index)
+        {
+            if (std::abs(pressures1[index] - pressures2[index]) > pressure_tolerance)
+            {
+                return std::nullopt;
+            }
+
+            const double current_difference = difference(index);
+            if (current_difference == 0.0)
+            {
+                return Intersection{ pressures1[index], volumes1[index] };
+            }
+
+            if (index == 0)
+            {
+                continue;
+            }
+
+            const double previous_difference = difference(index - 1);
+            if ((previous_difference < 0.0 && current_difference > 0.0) ||
+                (previous_difference > 0.0 && current_difference < 0.0))
+            {
+                const double interpolation = previous_difference / (previous_difference - current_difference);
+                const double pressure = pressures1[index - 1] + interpolation * (pressures1[index] - pressures1[index - 1]);
+                const double volume = volumes1[index - 1] + interpolation * (volumes1[index] - volumes1[index - 1]);
+                return Intersection{ pressure, volume };
+            }
+        }
+
+        return std::nullopt;
+    }
+
+    std::string intersectionLabel(double pressure)
+    {
+        std::ostringstream label;
+        label.precision(4);
+        label << "P = " << std::fixed << pressure << " bar";
+        return label.str();
+    }
+
+    std::string scaleSuffix(PlotScale scale)
+    {
+        return scale == PlotScale::Logarithmic ? "_log" : "_linear";
+    }
+
     std::string yLabelFor(SolType type)
     {
         switch (type)
@@ -134,7 +205,7 @@ void Plotter::plotComparativeSpecificVolumes(double pressure_start, double press
     plotTwoVectors(generatePNGName("specific_liquid", liquid_state.temperature), liquid_calculation.pressures, liquid_calculation.volumes, approximation.liquid.pressures, approximation.liquid.volumes, SolType::LIQUID);
 }
 
-void Plotter::plotConvergancePressureMolar(double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
+void Plotter::plotMolarVolumeIntersection(double pressure_start, double pressure_end, double pressure_inc, std::pair<size_t, size_t> indecies, PlotScale scale)
 {
     auto data = controller_->getData();
     auto gas_name = data.names[indecies.first];
@@ -148,10 +219,10 @@ void Plotter::plotConvergancePressureMolar(double pressure_start, double pressur
     controller_->setConcentrationState(indecies.second);
     auto liquid_calculation = controller_->calculateVolumeInRange(Controller::generateJsonName(liquid_state, RequestType::EXACT_MOLAR), pressure_start, pressure_end, pressure_inc);
 
-    plotTwoConvVectors(generatePNGName("molar_convergance", gas_state.temperature), gas_calculation.pressures, gas_calculation.volumes, liquid_calculation.pressures, liquid_calculation.volumes, SolType::DEFAULT);
+    plotVolumeIntersection(generatePNGName("molar_intersection" + scaleSuffix(scale), gas_state.temperature), gas_calculation.pressures, gas_calculation.volumes, liquid_calculation.pressures, liquid_calculation.volumes, SolType::DEFAULT, scale);
 }
 
-void Plotter::plotConvergancePressureSpecific(double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
+void Plotter::plotSpecificVolumeIntersection(double pressure_start, double pressure_end, double pressure_inc, std::pair<size_t, size_t> indecies, PlotScale scale)
 {
     auto data = controller_->getData();
     auto gas_name = data.names[indecies.first];
@@ -165,7 +236,7 @@ void Plotter::plotConvergancePressureSpecific(double pressure_start, double pres
     controller_->setConcentrationState(indecies.second);
     auto liquid_calculation = controller_->calculateSpecificVolumeInRange(Controller::generateJsonName(liquid_state, RequestType::EXACT_SPECIFIC), pressure_start, pressure_end, pressure_inc);
 
-    plotTwoConvVectors(generatePNGName("specific_convergance", gas_state.temperature), gas_calculation.pressures, gas_calculation.volumes, liquid_calculation.pressures, liquid_calculation.volumes, SolType::DEFAULT);
+    plotVolumeIntersection(generatePNGName("specific_intersection" + scaleSuffix(scale), gas_state.temperature), gas_calculation.pressures, gas_calculation.volumes, liquid_calculation.pressures, liquid_calculation.volumes, SolType::DEFAULT, scale);
 }
 
 void Plotter::plotComparativeKValues(double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
@@ -201,19 +272,32 @@ void Plotter::plotTwoVectors(const std::string& filename,  const std::vector<dou
     renderer_.render(spec);
 }
 
-void Plotter::plotTwoConvVectors(const std::string& filename, const std::vector<double>& x1, const std::vector<double>& y1, const std::vector<double>& x2, const std::vector<double>& y2, SolType type)
+void Plotter::plotVolumeIntersection(const std::string& filename, const std::vector<double>& x1, const std::vector<double>& y1, const std::vector<double>& x2, const std::vector<double>& y2, SolType type, PlotScale scale)
 {
     PlotSpec spec;
     spec.output_filename = filename;
     spec.x_label = "P, bar";
     spec.y_label = yLabelFor(type);
-    spec.log_x = true;
-    spec.log_y = true;
+    spec.log_x = scale == PlotScale::Logarithmic;
+    spec.log_y = scale == PlotScale::Logarithmic;
     spec.show_legend = false;
     spec.series.push_back(view::exactSeries(x1, y1));
     spec.series.push_back(view::exactSeries(x2, y2));
     addMiddleLabel(spec, "1", x1, y1);
     addMiddleLabel(spec, "2", x2, y2);
+
+    if (const auto intersection = findIntersection(x1, y1, x2, y2))
+    {
+        spec.points.push_back({ intersection->pressure, intersection->volume });
+        spec.labels.push_back({
+            intersectionLabel(intersection->pressure),
+            intersection->pressure,
+            intersection->volume,
+            view::plot_config::intersection_label_offset_x,
+            view::plot_config::intersection_label_offset_y
+        });
+    }
+
     renderer_.render(spec);
 }
 

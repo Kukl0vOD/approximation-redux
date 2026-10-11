@@ -41,20 +41,26 @@ inline void plotComparativeKValues(Plotter& plotter)
 	plotter.plotComparativeKValues(4.1, 38.6, 0.01, { 5.92,22.26,38.6 }, { 6, 7 });
 }
 
-inline void plotMolarConvergencePressure(Plotter& plotter)
+inline void plotMolarVolumeIntersections(Plotter& plotter)
 {
-	plotter.plotConvergancePressureMolar(1.0, 15, 0.01, { 1.2,3.0,4.8 }, { 0, 1 });
-	plotter.plotConvergancePressureMolar(1.0, 40, 0.01, { 1.67,7.74,13.8 }, { 2, 3 });
-	plotter.plotConvergancePressureMolar(1.0, 90, 0.01, { 1.1,12.0,26.8 }, { 4, 5 });
-	plotter.plotConvergancePressureMolar(4.1, 120., 0.01, { 5.92,22.26,38.6 }, { 6, 7 });
+	for (const auto scale : { PlotScale::Linear, PlotScale::Logarithmic })
+	{
+		plotter.plotMolarVolumeIntersection(1.0, 15, 0.01, { 0, 1 }, scale);
+		plotter.plotMolarVolumeIntersection(1.0, 40, 0.01, { 2, 3 }, scale);
+		plotter.plotMolarVolumeIntersection(1.0, 90, 0.01, { 4, 5 }, scale);
+		plotter.plotMolarVolumeIntersection(4.1, 120., 0.01, { 6, 7 }, scale);
+	}
 }
 
-inline void plotSpecificConvergencePressure(Plotter& plotter)
+inline void plotSpecificVolumeIntersections(Plotter& plotter)
 {
-	plotter.plotConvergancePressureSpecific(1.0, 15, 0.01, { 1.2,3.0,4.8 }, { 0, 1 });
-	plotter.plotConvergancePressureSpecific(1.0, 40, 0.01, { 1.67,7.74,13.8 }, { 2, 3 });
-	plotter.plotConvergancePressureSpecific(1.0, 90, 0.01, { 1.1,12.0,26.8 }, { 4, 5 });
-	plotter.plotConvergancePressureSpecific(4.1, 150, 0.01, { 5.92,22.26,38.6 }, { 6, 7 });
+	for (const auto scale : { PlotScale::Linear, PlotScale::Logarithmic })
+	{
+		plotter.plotSpecificVolumeIntersection(1.0, 15, 0.01, { 0, 1 }, scale);
+		plotter.plotSpecificVolumeIntersection(1.0, 40, 0.01, { 2, 3 }, scale);
+		plotter.plotSpecificVolumeIntersection(1.0, 90, 0.01, { 4, 5 }, scale);
+		plotter.plotSpecificVolumeIntersection(4.1, 150, 0.01, { 6, 7 }, scale);
+	}
 }
 
 inline void compareVolumeApproximationErrors(Controller& controller)
@@ -77,8 +83,8 @@ inline int run()
 	plotComparativeMolarVolumes(plotter);
 	plotComparativeSpecificVolumes(plotter);
 	plotComparativeKValues(plotter);
-	plotMolarConvergencePressure(plotter);
-	plotSpecificConvergencePressure(plotter);
+	plotMolarVolumeIntersections(plotter);
+	plotSpecificVolumeIntersections(plotter);
 	compareVolumeApproximationErrors(controller);
 
 	return 0;
