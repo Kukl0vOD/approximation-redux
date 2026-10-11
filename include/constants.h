@@ -13,6 +13,7 @@ namespace constants
 		inline constexpr double m_quadratic_factor = 0.2699;
 		inline constexpr double a_factor = 0.45724;
 		inline constexpr double b_factor = 0.07780;
+		inline constexpr double minimum_z_factor = 1e-2;
 	}
 
 	namespace wilson

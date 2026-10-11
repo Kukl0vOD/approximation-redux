@@ -58,8 +58,8 @@ inline void plotSpecificVolumeIntersections(Plotter& plotter)
 	{
 		plotter.plotSpecificVolumeIntersection(1.0, 15, 0.01, { 0, 1 }, scale);
 		plotter.plotSpecificVolumeIntersection(1.0, 40, 0.01, { 2, 3 }, scale);
-		plotter.plotSpecificVolumeIntersection(1.0, 90, 0.01, { 4, 5 }, scale);
-		plotter.plotSpecificVolumeIntersection(4.1, 150, 0.01, { 6, 7 }, scale);
+		plotter.plotSpecificVolumeIntersection(1.0, 150, 0.01, { 4, 5 }, scale);
+		plotter.plotSpecificVolumeIntersection(4.1, 450, 0.01, { 6, 7 }, scale);
 	}
 }
 

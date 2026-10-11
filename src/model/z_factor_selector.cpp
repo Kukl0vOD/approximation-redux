@@ -1,5 +1,7 @@
 #include "model/z_factor_selector.h"
 
+#include "constants.h"
+
 #include <algorithm>
 #include <stdexcept>
 
@@ -12,10 +14,10 @@ namespace sol
 			throw std::logic_error("Z-factor roots are empty");
 		}
 
-		auto not_negative_comparator = [](double a, double b)
+		auto valid_root_comparator = [](double a, double b)
 			{
-				bool a_valid = (a >= 0);
-				bool b_valid = (b >= 0);
+				bool a_valid = (a >= constants::peng_robinson::minimum_z_factor);
+				bool b_valid = (b >= constants::peng_robinson::minimum_z_factor);
 
 				if (a_valid && !b_valid) return true;
 				if (!a_valid && b_valid) return false;
@@ -27,7 +29,7 @@ namespace sol
 		switch (phase)
 		{
 		case Phase::LIQUID:
-			return *std::min_element(roots.begin(), roots.end(), not_negative_comparator);
+			return *std::min_element(roots.begin(), roots.end(), valid_root_comparator);
 		case Phase::GAS:
 			return *std::max_element(roots.begin(), roots.end());
 		default:
