@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <optional>
 #include <sstream>
 
@@ -15,6 +16,12 @@ namespace
     {
         double pressure;
         double volume;
+    };
+
+    struct KValuesIntersection
+    {
+        double pressure;
+        double k_value;
     };
 
     std::optional<Intersection> findIntersection(
@@ -78,6 +85,57 @@ namespace
     std::string scaleSuffix(PlotScale scale)
     {
         return scale == PlotScale::Logarithmic ? "_log" : "_linear";
+    }
+
+    std::optional<KValuesIntersection> findKValuesIntersection(
+        const std::vector<double>& pressures,
+        const std::unordered_map<std::string, std::vector<double>>& k_values)
+    {
+        if (pressures.empty() || k_values.empty())
+        {
+            return std::nullopt;
+        }
+
+        double best_relative_spread = std::numeric_limits<double>::infinity();
+        std::optional<KValuesIntersection> best_intersection;
+
+        for (size_t index = 0; index < pressures.size(); ++index)
+        {
+            double min_k = std::numeric_limits<double>::infinity();
+            double max_k = -std::numeric_limits<double>::infinity();
+            double sum_k = 0.0;
+            size_t values_count = 0;
+
+            for (const auto& [component, values] : k_values)
+            {
+                (void)component;
+                if (index >= values.size() || !std::isfinite(values[index]) || values[index] <= 0.0)
+                {
+                    values_count = 0;
+                    break;
+                }
+
+                min_k = (std::min)(min_k, values[index]);
+                max_k = (std::max)(max_k, values[index]);
+                sum_k += values[index];
+                ++values_count;
+            }
+
+            if (values_count != k_values.size())
+            {
+                continue;
+            }
+
+            const double mean_k = sum_k / static_cast<double>(values_count);
+            const double relative_spread = (max_k - min_k) / mean_k;
+            if (relative_spread < best_relative_spread)
+            {
+                best_relative_spread = relative_spread;
+                best_intersection = KValuesIntersection{ pressures[index], mean_k };
+            }
+        }
+
+        return best_intersection;
     }
 
     std::string yLabelFor(SolType type)
@@ -254,8 +312,28 @@ void Plotter::plotComparativeKValues(double pressure_start, double pressure_end,
     {
         plotThreeVectors(generatePNGName(component.name, gas_state.temperature), generatePNGName(component.name, gas_state.temperature), def_kvalues.pressures, def_kvalues.kvalues.at(component.name), wilson_kvalues.pressures, wilson_kvalues.kvalues.at(component.name), app_kvalues.pressures, app_kvalues.kvalues.at(component.name));
     }
+}
 
-    plotAllVectors(generatePNGName("ttt", gas_state.temperature), def_kvalues.pressures, def_kvalues.kvalues);
+void Plotter::plotDefinitionKValuesIntersection(double pressure_start, double pressure_end, double pressure_inc, std::pair<size_t, size_t> indecies)
+{
+    const auto data = controller_->getData();
+    const auto& gas_name = data.names[indecies.first];
+    const auto gas_state = data.states.at(gas_name);
+
+    controller_->setConcentrationState(indecies.first);
+    const auto k_values = controller_->calculateKValuesByDefinitionInRange(
+        Controller::generateJsonName(gas_state, RequestType::EXACT_KVALUE),
+        pressure_start,
+        pressure_end,
+        pressure_inc,
+        indecies
+    );
+
+    plotAllVectors(
+        generatePNGName("kvalues_by_definition_intersection", gas_state.temperature),
+        k_values.pressures,
+        k_values.kvalues
+    );
 }
 
 void Plotter::plotTwoVectors(const std::string& filename,  const std::vector<double>& x1, const std::vector<double>& y1, const std::vector<double>& x2, const std::vector<double>& y2, SolType type)
@@ -320,7 +398,7 @@ void Plotter::plotThreeVectors(const std::string& title, const std::string& file
     renderer_.render(spec);
 }
 
-void Plotter::plotAllVectors(const std::string& title, const std::vector<double>& pressures, const std::unordered_map<std::string, std::vector<double>> k_values)
+void Plotter::plotAllVectors(const std::string& title, const std::vector<double>& pressures, const std::unordered_map<std::string, std::vector<double>>& k_values)
 {
     std::string filename = title;
     if (!filename.ends_with(".png")) {
@@ -345,6 +423,18 @@ void Plotter::plotAllVectors(const std::string& title, const std::vector<double>
         }
 
         spec.series.push_back(view::componentSeries(kvalue.first, pressures, kvalue.second));
+    }
+
+    if (const auto intersection = findKValuesIntersection(pressures, k_values))
+    {
+        spec.points.push_back({ intersection->pressure, intersection->k_value });
+        spec.labels.push_back({
+            intersectionLabel(intersection->pressure),
+            intersection->pressure,
+            intersection->k_value,
+            view::plot_config::intersection_label_offset_x,
+            view::plot_config::intersection_label_offset_y
+        });
     }
 
     renderer_.render(spec);

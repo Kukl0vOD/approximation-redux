@@ -41,6 +41,14 @@ inline void plotComparativeKValues(Plotter& plotter)
 	plotter.plotComparativeKValues(4.1, 38.6, 0.01, { 5.92,22.26,38.6 }, { 6, 7 });
 }
 
+inline void plotDefinitionKValuesIntersections(Plotter& plotter)
+{
+	plotter.plotDefinitionKValuesIntersection(1.0, 15, 0.01, { 0, 1 });
+	plotter.plotDefinitionKValuesIntersection(1.0, 40, 0.01, { 2, 3 });
+	plotter.plotDefinitionKValuesIntersection(1.0, 90, 0.01, { 4, 5 });
+	plotter.plotDefinitionKValuesIntersection(4.1, 450, 0.01, { 6, 7 });
+}
+
 inline void plotMolarVolumeIntersections(Plotter& plotter)
 {
 	for (const auto scale : { PlotScale::Linear, PlotScale::Logarithmic })
@@ -83,6 +91,7 @@ inline int run()
 	plotComparativeMolarVolumes(plotter);
 	plotComparativeSpecificVolumes(plotter);
 	plotComparativeKValues(plotter);
+	plotDefinitionKValuesIntersections(plotter);
 	plotMolarVolumeIntersections(plotter);
 	plotSpecificVolumeIntersections(plotter);
 	compareVolumeApproximationErrors(controller);
