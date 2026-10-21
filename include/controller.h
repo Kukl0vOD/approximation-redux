@@ -10,6 +10,7 @@
 #include "model/results.h"
 
 #include <array>
+#include <filesystem>
 
 enum class RequestType
 {
@@ -50,6 +51,7 @@ public:
     void                            setVolumeDimension(sol::VolumeDimension new_dimension);
     void                            setSpecificVolumeDimension(sol::SpecificVolumeDimension new_dimension);
     void                            setMolarMassDimension(sol::MolarMassDimension new_dimension);
+    void                            setOutputSubdirectory(std::filesystem::path subdirectory);
 
     CalculationResult               calculateVolumeInRange(const std::string& json_output_filename, double pressure_start, double pressure_end, double pressure_inc);
     CalculationResult               calculateSpecificVolumeInRange(const std::string& json_output_filename, double pressure_start, double pressure_end, double pressure_inc);
@@ -66,10 +68,12 @@ public:
 
 private:
     void                            setConcentrationStateInternal(sol::Solution& solution, size_t index) const;
+    std::string                     outputFilename(const std::string& filename) const;
 
     size_t                          current_index_ = 0;
     ParsedData                      data_;
     std::unique_ptr<sol::Solution>  current_solution_;
+    std::filesystem::path           output_subdirectory_;
 
     inline static const sol::State default_init_state
     {

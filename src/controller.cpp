@@ -36,6 +36,7 @@ Controller::Controller(const std::string json_filename, Correlation correlation,
 Controller::Controller(const Controller& other)
     : current_index_(other.current_index_)
     , data_(other.data_)
+    , output_subdirectory_(other.output_subdirectory_)
 {
     if (other.current_solution_)
     {
@@ -47,6 +48,7 @@ Controller::Controller(Controller&& other) noexcept
     : current_index_(std::move(other.current_index_))
     , data_(std::move(other.data_))
     , current_solution_(std::move(other.current_solution_))
+    , output_subdirectory_(std::move(other.output_subdirectory_))
 {
 }
 
@@ -96,17 +98,32 @@ void Controller::setMolarMassDimension(sol::MolarMassDimension new_dimension)
     current_solution_->setMolarMassDimension(new_dimension);
 }
 
+void Controller::setOutputSubdirectory(std::filesystem::path subdirectory)
+{
+    if (subdirectory.is_absolute() || subdirectory.has_parent_path())
+    {
+        throw std::invalid_argument("Output subdirectory must be a single relative directory name");
+    }
+
+    output_subdirectory_ = std::move(subdirectory);
+}
+
+std::string Controller::outputFilename(const std::string& filename) const
+{
+    return (output_subdirectory_ / filename).generic_string();
+}
+
 CalculationResult Controller::calculateVolumeInRange(const std::string &json_output_filename, double pressure_start, double pressure_end, double pressure_inc)
 {
     auto result = ThermoRangeService::calculateMolarVolumeRange(*current_solution_, { pressure_start, pressure_end, pressure_inc });
-    JsonResultWriter::writeCalculationResult(result, json_output_filename, "V");
+    JsonResultWriter::writeCalculationResult(result, outputFilename(json_output_filename), "V");
     return result;
 }
 
 CalculationResult Controller::calculateSpecificVolumeInRange(const std::string &json_output_filename, double pressure_start, double pressure_end, double pressure_inc)
 {
     auto result = ThermoRangeService::calculateSpecificVolumeRange(*current_solution_, { pressure_start, pressure_end, pressure_inc });
-    JsonResultWriter::writeCalculationResult(result, json_output_filename, "SV");
+    JsonResultWriter::writeCalculationResult(result, outputFilename(json_output_filename), "SV");
     return result;
 }
 
@@ -114,14 +131,14 @@ KValuesResult Controller::calculateKValuesByDefinitionInRange(const std::string&
 {
     auto pair = PhasePairFactory::create(*current_solution_, data_, { indecies.first, indecies.second });
     auto result = KValueRangeService::calculateByDefinition(pair.gas, pair.liquid, current_solution_->getComponents(), { pressure_start, pressure_end, pressure_inc });
-    JsonResultWriter::writeKValuesResult(result, current_solution_->getComponents(), json_output_filename);
+    JsonResultWriter::writeKValuesResult(result, current_solution_->getComponents(), outputFilename(json_output_filename));
     return result;
 }
 
 KValuesResult Controller::calculateKValuesByWilsonInRange(const std::string& json_output_filename, double pressure_start, double pressure_end, double pressure_inc)
 {
     auto result = KValueRangeService::calculateByWilson(*current_solution_, { pressure_start, pressure_end, pressure_inc });
-    JsonResultWriter::writeKValuesResult(result, current_solution_->getComponents(), json_output_filename);
+    JsonResultWriter::writeKValuesResult(result, current_solution_->getComponents(), outputFilename(json_output_filename));
     return result;
 }
 
@@ -188,7 +205,7 @@ KValuesResult Controller::approximateKValuesInRange(const std::string& json_outp
 {
     auto pair = PhasePairFactory::create(*current_solution_, data_, { indecies.first, indecies.second });
     auto result = ApproximationRangeService::calculateKValues(pair, current_solution_->getComponents(), { pressure_start, pressure_end, pressure_inc }, fixed_pressures);
-    JsonResultWriter::writeKValuesResult(result, current_solution_->getComponents(), json_output_filename);
+    JsonResultWriter::writeKValuesResult(result, current_solution_->getComponents(), outputFilename(json_output_filename));
     return result;
 }
 
@@ -209,10 +226,10 @@ void Controller::compareVolumeAndSpecificApprox(const std::string& json_output_f
     auto molar_approximation = approximateVolumeInRange(Controller::generateJsonName(gas_state, RequestType::APPROXIMATION_MOLAR), pressure_start, pressure_end, pressure_inc, fixed_pressures, indecies);
 
     setConcentrationState(indecies.first);
-    auto gas_specific = calculateSpecificVolumeInRange(Controller::generateJsonName(gas_state, RequestType::EXACT_MOLAR), pressure_start, pressure_end, pressure_inc);
+    auto gas_specific = calculateSpecificVolumeInRange(Controller::generateJsonName(gas_state, RequestType::EXACT_SPECIFIC), pressure_start, pressure_end, pressure_inc);
 
     setConcentrationState(indecies.second);
-    auto liquid_specific = calculateSpecificVolumeInRange(Controller::generateJsonName(liquid_state, RequestType::EXACT_MOLAR), pressure_start, pressure_end, pressure_inc);
+    auto liquid_specific = calculateSpecificVolumeInRange(Controller::generateJsonName(liquid_state, RequestType::EXACT_SPECIFIC), pressure_start, pressure_end, pressure_inc);
 
     auto specific_approximation = approximateSpecificVolumeInRange(Controller::generateJsonName(gas_state, RequestType::APPROXIMATION_SPECIFIC), pressure_start, pressure_end, pressure_inc, fixed_pressures, indecies);
 
@@ -225,14 +242,14 @@ void Controller::compareVolumeAndSpecificApprox(const std::string& json_output_f
         specific_approximation
     );
 
-    JsonResultWriter::writeErrorAnalysisResult(result, json_output_filename);
+    JsonResultWriter::writeErrorAnalysisResult(result, outputFilename(json_output_filename));
 }
 
 ApproximationResult Controller::approximateSpecificVolumeInRange(const std::string &json_output_filename, double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
 {
     auto pair = PhasePairFactory::create(*current_solution_, data_, { indecies.first, indecies.second });
     auto result = ApproximationRangeService::calculateSpecificVolume(pair, { pressure_start, pressure_end, pressure_inc }, fixed_pressures);
-    JsonResultWriter::writeSpecificApproximationResult(result, json_output_filename);
+    JsonResultWriter::writeSpecificApproximationResult(result, outputFilename(json_output_filename));
     return result;
 }
 
@@ -240,6 +257,6 @@ ApproximationResult Controller::approximateVolumeInRange(const std::string &json
 {
     auto pair = PhasePairFactory::create(*current_solution_, data_, { indecies.first, indecies.second });
     auto output = ApproximationRangeService::calculateMolarVolume(pair, { pressure_start, pressure_end, pressure_inc }, fixed_pressures);
-    JsonResultWriter::writeMolarApproximationResult(output.result, output.constants, json_output_filename);
+    JsonResultWriter::writeMolarApproximationResult(output.result, output.constants, outputFilename(json_output_filename));
     return output.result;
 }

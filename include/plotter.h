@@ -3,6 +3,8 @@
 #include "controller.h"
 #include "view/matplot_renderer.h"
 
+#include <filesystem>
+
 enum class SolType
 {
 	GAS,
@@ -19,7 +21,7 @@ enum class PlotScale
 class Plotter
 {
 public:
-	Plotter(const Controller& controller);
+	Plotter(const Controller& controller, std::filesystem::path output_subdirectory = {});
 
 	void							plotComparativeMolarVolumes(double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies);
 	void							plotComparativeSpecificVolumes(double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies);
@@ -34,6 +36,8 @@ public:
 	static std::string				generatePNGName(const std::string& name, double temperature);
 
 private:
+	std::string						plotFilename(const std::string& filename) const;
 	std::unique_ptr<Controller>		controller_;
 	MatplotRenderer					renderer_;
+	std::filesystem::path			output_subdirectory_;
 };

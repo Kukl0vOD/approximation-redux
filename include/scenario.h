@@ -83,6 +83,61 @@ inline void compareVolumeApproximationErrors(Controller& controller)
 	controller.compareVolumeAndSpecificApprox("rel_error_573.15.json", 4.1, 38.6, 0.01, { 5.92,22.26,38.6 }, { 6, 7 });
 }
 
+inline void plotSixComponentComparativeMolarVolumes(Plotter& plotter)
+{
+	plotter.plotComparativeMolarVolumes(1.01325, 66.37, 0.01, { 1.01325, 33.691184210526316, 66.36911842105263 }, { 0, 1 });
+	plotter.plotComparativeMolarVolumes(11.572381578947368, 96.05, 0.01, { 11.572381578947368, 53.80890789473685, 96.04543421052631 }, { 2, 3 });
+	plotter.plotComparativeMolarVolumes(16.85194736842105, 90.77, 0.01, { 16.85194736842105, 53.80890789473685, 90.76586842105264 }, { 4, 5 });
+}
+
+inline void plotSixComponentComparativeSpecificVolumes(Plotter& plotter)
+{
+	plotter.plotComparativeSpecificVolumes(1.01325, 66.37, 0.01, { 1.01325, 33.691184210526316, 66.36911842105263 }, { 0, 1 });
+	plotter.plotComparativeSpecificVolumes(11.572381578947368, 96.05, 0.01, { 11.572381578947368, 53.80890789473685, 96.04543421052631 }, { 2, 3 });
+	plotter.plotComparativeSpecificVolumes(16.85194736842105, 90.77, 0.01, { 16.85194736842105, 53.80890789473685, 90.76586842105264 }, { 4, 5 });
+}
+
+inline void plotSixComponentComparativeKValues(Plotter& plotter)
+{
+	plotter.plotComparativeKValues(1.01325, 66.37, 0.01, { 1.01325, 33.691184210526316, 66.36911842105263 }, { 0, 1 });
+	plotter.plotComparativeKValues(11.572381578947368, 96.05, 0.01, { 11.572381578947368, 53.80890789473685, 96.04543421052631 }, { 2, 3 });
+	plotter.plotComparativeKValues(16.85194736842105, 90.77, 0.01, { 16.85194736842105, 53.80890789473685, 90.76586842105264 }, { 4, 5 });
+}
+
+inline void plotSixComponentDefinitionKValuesIntersections(Plotter& plotter)
+{
+	plotter.plotDefinitionKValuesIntersection(1.01325, 66.37, 0.01, { 0, 1 });
+	plotter.plotDefinitionKValuesIntersection(11.572381578947368, 96.05, 0.01, { 2, 3 });
+	plotter.plotDefinitionKValuesIntersection(16.85194736842105, 90.77, 0.01, { 4, 5 });
+}
+
+inline void plotSixComponentMolarVolumeIntersections(Plotter& plotter)
+{
+	for (const auto scale : { PlotScale::Linear, PlotScale::Logarithmic })
+	{
+		plotter.plotMolarVolumeIntersection(1.01325, 66.37, 0.01, { 0, 1 }, scale);
+		plotter.plotMolarVolumeIntersection(11.572381578947368, 96.05, 0.01, { 2, 3 }, scale);
+		plotter.plotMolarVolumeIntersection(16.85194736842105, 90.77, 0.01, { 4, 5 }, scale);
+	}
+}
+
+inline void plotSixComponentSpecificVolumeIntersections(Plotter& plotter)
+{
+	for (const auto scale : { PlotScale::Linear, PlotScale::Logarithmic })
+	{
+		plotter.plotSpecificVolumeIntersection(1.01325, 66.37, 0.01, { 0, 1 }, scale);
+		plotter.plotSpecificVolumeIntersection(11.572381578947368, 96.05, 0.01, { 2, 3 }, scale);
+		plotter.plotSpecificVolumeIntersection(16.85194736842105, 90.77, 0.01, { 4, 5 }, scale);
+	}
+}
+
+inline void compareSixComponentVolumeApproximationErrors(Controller& controller)
+{
+	controller.compareVolumeAndSpecificApprox("rel_error_273.15.json", 1.01325, 66.37, 0.01, { 1.01325, 33.691184210526316, 66.36911842105263 }, { 0, 1 });
+	controller.compareVolumeAndSpecificApprox("rel_error_763.15.json", 11.572381578947368, 96.05, 0.01, { 11.572381578947368, 53.80890789473685, 96.04543421052631 }, { 2, 3 });
+	controller.compareVolumeAndSpecificApprox("rel_error_773.15.json", 16.85194736842105, 90.77, 0.01, { 16.85194736842105, 53.80890789473685, 90.76586842105264 }, { 4, 5 });
+}
+
 inline int runMainCalculations()
 {
 	Controller controller("solution_data.json");
@@ -99,6 +154,27 @@ inline int runMainCalculations()
 	plotMolarVolumeIntersections(plotter);
 	plotSpecificVolumeIntersections(plotter);
 	compareVolumeApproximationErrors(controller);
+
+	return 0;
+}
+
+inline int runSixComponentCalculations()
+{
+	Controller controller("6_component_data/solution_data.json");
+	controller.setPressureDimension(sol::PressureDimension::BAR);
+	controller.setVolumeDimension(sol::VolumeDimension::LITER);
+	controller.setOutputSubdirectory("6_component");
+
+	printSolutionNames(controller);
+
+	Plotter plotter(controller, "6_component");
+	plotSixComponentComparativeMolarVolumes(plotter);
+	plotSixComponentComparativeSpecificVolumes(plotter);
+	plotSixComponentComparativeKValues(plotter);
+	plotSixComponentDefinitionKValuesIntersections(plotter);
+	plotSixComponentMolarVolumeIntersections(plotter);
+	plotSixComponentSpecificVolumeIntersections(plotter);
+	compareSixComponentVolumeApproximationErrors(controller);
 
 	return 0;
 }
@@ -134,6 +210,12 @@ inline int runConcentrationExtractor()
 
 inline int run()
 {
-	return runConcentrationExtractor();
+	const int main_result = runMainCalculations();
+	if (main_result != 0)
+	{
+		return main_result;
+	}
+
+	return runSixComponentCalculations();
 }
 }

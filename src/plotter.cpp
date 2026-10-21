@@ -218,9 +218,19 @@ namespace
 }
 
 
-Plotter::Plotter(const Controller& controller)
+Plotter::Plotter(const Controller& controller, std::filesystem::path output_subdirectory)
 	: controller_(std::make_unique<Controller>(controller))
+	, output_subdirectory_(std::move(output_subdirectory))
 {
+    if (output_subdirectory_.is_absolute() || output_subdirectory_.has_parent_path())
+    {
+        throw std::invalid_argument("Plot output subdirectory must be a single relative directory name");
+    }
+}
+
+std::string Plotter::plotFilename(const std::string& filename) const
+{
+    return (output_subdirectory_ / filename).generic_string();
 }
 
 void Plotter::plotComparativeMolarVolumes(double pressure_start, double pressure_end, double pressure_inc, std::array<double, 3> fixed_pressures, std::pair<size_t, size_t> indecies)
@@ -339,7 +349,7 @@ void Plotter::plotDefinitionKValuesIntersection(double pressure_start, double pr
 void Plotter::plotTwoVectors(const std::string& filename,  const std::vector<double>& x1, const std::vector<double>& y1, const std::vector<double>& x2, const std::vector<double>& y2, SolType type)
 {
     PlotSpec spec;
-    spec.output_filename = filename;
+    spec.output_filename = plotFilename(filename);
     spec.x_label = "P, bar";
     spec.y_label = yLabelFor(type);
     spec.show_legend = false;
@@ -353,7 +363,7 @@ void Plotter::plotTwoVectors(const std::string& filename,  const std::vector<dou
 void Plotter::plotVolumeIntersection(const std::string& filename, const std::vector<double>& x1, const std::vector<double>& y1, const std::vector<double>& x2, const std::vector<double>& y2, SolType type, PlotScale scale)
 {
     PlotSpec spec;
-    spec.output_filename = filename;
+    spec.output_filename = plotFilename(filename);
     spec.x_label = "P, bar";
     spec.y_label = yLabelFor(type);
     spec.log_x = scale == PlotScale::Logarithmic;
@@ -383,7 +393,7 @@ void Plotter::plotThreeVectors(const std::string& title, const std::string& file
 {
     PlotSpec spec;
     spec.title = title;
-    spec.output_filename = filename;
+    spec.output_filename = plotFilename(filename);
     spec.x_label = "P, bar";
     spec.y_label = "KValue";
     spec.base_font_size = view::plot_config::k_value_base_font_size;
@@ -407,7 +417,7 @@ void Plotter::plotAllVectors(const std::string& title, const std::vector<double>
 
     PlotSpec spec;
     spec.title = title;
-    spec.output_filename = filename;
+    spec.output_filename = plotFilename(filename);
     spec.x_label = "P";
     spec.y_label = "KValue";
     spec.log_x = true;
