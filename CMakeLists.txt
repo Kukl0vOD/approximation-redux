@@ -19,6 +19,24 @@ set_target_properties(matplot PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+add_library(ConcentrationExtractor STATIC
+    include/concentration_extractor.h
+    src/concentration_extractor.cpp
+)
+
+target_include_directories(ConcentrationExtractor
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+target_compile_features(ConcentrationExtractor PUBLIC cxx_std_20)
+
+if(MSVC)
+    target_compile_options(ConcentrationExtractor PRIVATE /W3 /permissive-)
+else()
+    target_compile_options(ConcentrationExtractor PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
 add_library(redux_model STATIC
     src/model/approximation.cpp
     src/model/eos.cpp
@@ -61,6 +79,11 @@ target_link_libraries(redux_application
         redux_model
 )
 
+target_link_libraries(ConcentrationExtractor
+    PRIVATE
+        redux_application
+)
+
 target_compile_features(redux_application PUBLIC cxx_std_20)
 
 if(MSVC)
@@ -97,6 +120,7 @@ if(REDUX_BUILD_APP)
     target_link_libraries(redux
         PRIVATE
             redux_view
+            ConcentrationExtractor
     )
 
     if(MSVC)

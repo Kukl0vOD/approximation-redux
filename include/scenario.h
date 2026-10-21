@@ -1,8 +1,12 @@
 #pragma once
 
 #include <cstddef>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 
+#include "application/resource_paths.h"
+#include "concentration_extractor.h"
 #include "plotter.h"
 
 namespace scenario
@@ -79,7 +83,7 @@ inline void compareVolumeApproximationErrors(Controller& controller)
 	controller.compareVolumeAndSpecificApprox("rel_error_573.15.json", 4.1, 38.6, 0.01, { 5.92,22.26,38.6 }, { 6, 7 });
 }
 
-inline int run()
+inline int runMainCalculations()
 {
 	Controller controller("solution_data.json");
 	controller.setPressureDimension(sol::PressureDimension::BAR);
@@ -97,5 +101,39 @@ inline int run()
 	compareVolumeApproximationErrors(controller);
 
 	return 0;
+}
+
+inline int runConcentrationExtractor()
+{
+	std::filesystem::path input_directory =
+		app_paths::inputDir() / "6_component_data";
+	std::filesystem::path output_directory =
+		app_paths::outputDir() / "6_component_concentrations";
+
+	for (int temperature : { 490, 500 })
+	{
+		std::string suffix = std::to_string(temperature) + "_celsius.json";
+		extractor::ConcentrationExtractor concentration_extractor(
+			input_directory / "solution.json",
+			input_directory / ("molar_fractions_" + suffix),
+			input_directory / ("kvalues_" + suffix)
+		);
+
+		double temperature_kelvin = temperature + 273.15;
+		std::ostringstream output_name;
+		output_name << "concentrations_" << std::setprecision(15)
+			<< temperature_kelvin << ".json";
+		std::filesystem::path output_file = output_directory / output_name.str();
+		concentration_extractor.exportToJson(output_file);
+
+		std::cout << "Concentrations exported to " << output_file << '\n';
+	}
+
+	return 0;
+}
+
+inline int run()
+{
+	return runConcentrationExtractor();
 }
 }
